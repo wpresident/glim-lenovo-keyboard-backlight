@@ -17,6 +17,7 @@
 #include <dwmapi.h>
 #include <stdint.h>
 #include <wchar.h>
+#include <wctype.h>
 #include <stdio.h>
 #include <stdarg.h>
 #include <stdlib.h>
@@ -49,7 +50,7 @@
 
 enum { ID_R0 = 100, ID_R1, ID_R2, ID_R3, ID_AUTOSTART, ID_ONWAKE, ID_APPLY, ID_HIDE, ID_STATUS, ID_TEST,
        ID_GROUP, ID_LANGLBL, ID_LANG, ID_RESPECT, ID_ABOUT, ID_UPDATE,
-       ID_TRAY_OPEN = 200, ID_TRAY_OFF, ID_TRAY_LOW, ID_TRAY_HIGH, ID_TRAY_AUTO, ID_TRAY_EXIT = 205, ID_TRAY_RESTORE, ID_TRAY_ABOUT, ID_TRAY_UPDATE,
+       ID_TRAY_OPEN = 200, ID_TRAY_OFF, ID_TRAY_LOW, ID_TRAY_HIGH, ID_TRAY_AUTO, ID_TRAY_EXIT = 205, ID_TRAY_RESTORE, ID_TRAY_ABOUT, ID_TRAY_UPDATE, ID_TRAY_REPORT,
        T_START1 = 300, T_START2, T_START3, T_WAKE, T_POLL, T_TRAY };
 
 /* ---------- DLLs that are not KnownDLLs: loaded from System32 only, never from the exe's folder ----------
@@ -126,7 +127,9 @@ enum { S_MODE0, S_MODE1, S_MODE2, S_MODE3, S_GROUP, S_AUTOSTART, S_ONWAKE, S_TES
        S_T_REGOK, S_T_REGFAIL, S_T_AUTOOK, S_T_AUTOFAIL, S_T_AUTOOFF, S_T_SUM, S_T_GOOD, S_T_BAD, S_T_LOG,
        S_RESPECT, S_CUR_MANUAL, S_RESTORE, S_ABOUT, S_ABOUT_TITLE, S_ABOUT_TEXT, S_ABOUT_FOOT, S_TAKEOVER_FAIL, S_OTHER_RIGHTS,
        S_UPD_BUTTON, S_UPD_CHECKING, S_UPD_TITLE, S_UPD_LATEST, S_UPD_ASK, S_UPD_FAIL, S_UPD_E_NET, S_UPD_E_FORMAT,
-       S_UPD_E_LIMIT, S_UPD_E_NOFILE, S_AUTO_GONE, S_AUTO_OLDER, S_AUTO_TEMP, S_E_NOMODE, S_T_RAW, S_T_NOMODE, S_E_REFUSED, S_T_NOEFFECT, S_COUNT };
+       S_UPD_E_LIMIT, S_UPD_E_NOFILE, S_AUTO_GONE, S_AUTO_OLDER, S_AUTO_TEMP, S_E_NOMODE, S_T_RAW, S_T_NOMODE, S_E_REFUSED, S_T_NOEFFECT,
+       S_TRAY_REPORT, S_REP_TITLE, S_REP_FAIL_MAIN, S_REP_FAIL_TEXT, S_REP_NEW_MAIN, S_REP_NEW_TEXT, S_REP_ASK_MAIN, S_REP_ASK_TEXT,
+       S_REP_OPEN, S_REP_COPY, S_REP_LATER, S_REP_DETAILS, S_REP_FOOT, S_REP_COPIED, S_REP_QUESTIONS, S_REP_COPYFAIL, S_REP_NOBROWSER, S_COUNT };
 
 static const wchar_t *STR[L_COUNT][S_COUNT] = {
  { /* English */
@@ -159,7 +162,22 @@ static const wchar_t *STR[L_COUNT][S_COUNT] = {
   L"Autostart still starts an older Glim. Open the settings and click Apply to start this one instead.",
   L"Autostart is not turned on: Glim.exe is in a folder for temporary files (%ls), and autostart would stop working when it is deleted. Exit Glim (tray menu \x2192 Exit), move Glim.exe to a permanent folder (for example C:\\Glim), start it from there, tick the box and click Apply.",
   L"this keyboard doesn't have this mode", L"[INFO] Driver %ls: %ls", L"[INFO] \"%ls\": this keyboard doesn't have this mode",
-  L"the driver didn't accept the change", L"[FAIL] The driver accepts the modes, but the backlight doesn't change" },
+  L"the driver didn't accept the change", L"[FAIL] The driver accepts the modes, but the backlight doesn't change",
+  L"Report this laptop\x2026", L"Glim — laptop report",
+  L"Glim can't control the backlight of this laptop yet",
+  L"A report shows what the Lenovo driver answers on this model — that is what's needed to add support for it.",
+  L"Glim works here, but this kind of laptop is new to it",
+  L"Nobody has confirmed Glim on this kind of laptop yet. A short report helps the next owners of this model.",
+  L"Report this laptop",
+  L"Tell us how Glim works on this laptop: reports help add new models and fix problems, for example after hibernation.",
+  L"Open the report form on GitHub\nYour browser opens the form. The report is copied too: if its field is empty, press Ctrl+V there. Then answer a few questions and send it (a GitHub account is needed).",
+  L"Copy the report\nPaste it wherever you like: a GitHub issue, Reddit, a forum or an e-mail.",
+  L"Not now", L"Self-test details",
+  L"Nothing is published until you submit it on GitHub, and you can edit everything there. Your user name is removed from file paths.",
+  L"The report is copied. Paste it into a GitHub issue, a Reddit post or a forum — wherever you like.",
+  L"Does Glim keep your backlight mode? Does the backlight still change by itself — after a restart, sleep, hibernation or when the screen turns off?",
+  L"Couldn't copy the report: another program is using the clipboard. Try again in a moment.",
+  L"Couldn't open the browser. The report is copied instead: open %ls and paste it there." },
  { /* Russian */
   L"Выключена", L"Слабая", L"Яркая", L"Авто", L"Режим подсветки", L"Запускать вместе с Windows",
   L"Принудительно применять после сна/гибернации", L"Самотест", L"Применить", L"Скрыть", L"Язык:",
@@ -190,7 +208,22 @@ static const wchar_t *STR[L_COUNT][S_COUNT] = {
   L"Автозапуск всё ещё запускает старую версию Glim. Откройте настройки и нажмите «Применить», чтобы запускалась эта.",
   L"Автозапуск не включён: Glim.exe лежит в папке для временных файлов (%ls), и когда его удалят, автозапуск перестанет работать. Выйдите из Glim (меню в трее \x2192 Выход), перенесите Glim.exe в постоянную папку (например, C:\\Glim), запустите оттуда, поставьте галочку и нажмите «Применить».",
   L"у этой клавиатуры нет такого режима", L"[INFO] Драйвер %ls: %ls", L"[INFO] «%ls»: у этой клавиатуры нет такого режима",
-  L"драйвер не принял изменение", L"[FAIL] Драйвер принимает режимы, но подсветка не меняется" },
+  L"драйвер не принял изменение", L"[FAIL] Драйвер принимает режимы, но подсветка не меняется",
+  L"Сообщить о ноутбуке\x2026", L"Glim — отчёт о ноутбуке",
+  L"Glim пока не умеет управлять подсветкой этого ноутбука",
+  L"Отчёт покажет, что отвечает драйвер Lenovo на этой модели, — именно это нужно, чтобы добавить её поддержку.",
+  L"Glim здесь работает, но такой ноутбук для него новый",
+  L"На таких ноутбуках работу Glim ещё никто не подтвердил. Короткий отчёт поможет следующим владельцам этой модели.",
+  L"Сообщить о ноутбуке",
+  L"Расскажите, как Glim работает на этом ноутбуке: отчёты помогают добавлять новые модели и исправлять ошибки, например после гибернации.",
+  L"Открыть форму отчёта на GitHub\nВ браузере откроется форма. Отчёт заодно скопирован: если его поле пустое, нажмите там Ctrl+V. Потом ответьте на пару вопросов и отправьте (нужен аккаунт GitHub).",
+  L"Скопировать отчёт\nВставьте его куда удобно: в GitHub, на Reddit, на форум или в письмо.",
+  L"Не сейчас", L"Подробности самотеста",
+  L"Ничего не публикуется, пока вы сами не отправите отчёт на GitHub, а там всё можно поправить. Имя пользователя из путей к файлам убрано.",
+  L"Отчёт скопирован. Вставьте его в GitHub, на Reddit или на форум — куда удобно.",
+  L"Держит ли Glim ваш режим подсветки? Меняется ли подсветка сама — после перезагрузки, сна, гибернации или выключения экрана?",
+  L"Не удалось скопировать отчёт: буфер обмена занят другой программой. Попробуйте ещё раз чуть позже.",
+  L"Не удалось открыть браузер. Отчёт скопирован: откройте %ls и вставьте его туда." },
  { /* Chinese */
   L"关闭", L"低亮", L"高亮", L"自动", L"键盘背光模式", L"开机时自动启动",
   L"睡眠/休眠后强制重新应用", L"自检", L"应用", L"隐藏", L"语言：",
@@ -221,7 +254,22 @@ static const wchar_t *STR[L_COUNT][S_COUNT] = {
   L"开机启动仍在启动旧版 Glim。请打开设置并点击“应用”，改为启动此版本。",
   L"开机启动未开启：Glim.exe 位于临时文件夹（%ls），删除后开机启动将失效。请退出 Glim（托盘菜单 \x2192 退出），将 Glim.exe 移到固定的文件夹（例如 C:\\Glim），从那里启动，勾选后点击“应用”。",
   L"此键盘没有该模式", L"[INFO] 驱动 %ls：%ls", L"[INFO] “%ls”：此键盘没有该模式",
-  L"驱动未接受此更改", L"[FAIL] 驱动接受了各模式，但背光没有变化" }
+  L"驱动未接受此更改", L"[FAIL] 驱动接受了各模式，但背光没有变化",
+  L"报告此笔记本\x2026", L"Glim — 笔记本报告",
+  L"Glim 暂时无法控制此笔记本的键盘背光",
+  L"报告会显示联想驱动在此机型上的返回值——这正是为它添加支持所需要的。",
+  L"Glim 在这里可以工作，但它对这类笔记本还很陌生",
+  L"还没有人确认 Glim 在这类笔记本上能正常工作。一份简短的报告能帮助此机型的其他用户。",
+  L"报告此笔记本",
+  L"告诉我们 Glim 在此笔记本上的表现：报告能帮助我们添加新机型、修复问题（例如休眠后的问题）。",
+  L"在 GitHub 上打开报告表单\n浏览器会打开表单。报告也已复制：如果报告栏是空的，请在那里按 Ctrl+V。然后回答几个问题并提交（需要 GitHub 账号）。",
+  L"复制报告\n可以粘贴到任何地方：GitHub、Reddit、论坛或邮件。",
+  L"以后再说", L"自检详情",
+  L"在您于 GitHub 上提交之前不会发布任何内容，您可以在那里修改全部内容。文件路径中的用户名已被移除。",
+  L"报告已复制。可以粘贴到 GitHub、Reddit 或论坛——任何您想发的地方。",
+  L"Glim 能保持您的背光模式吗？背光是否仍会自行改变——在重启、睡眠、休眠或屏幕关闭之后？",
+  L"无法复制报告：剪贴板正被其他程序占用。请稍后再试。",
+  L"无法打开浏览器。报告已复制：请打开 %ls 并粘贴到那里。" }
 };
 static const wchar_t *LANG_NAMES[L_COUNT] = { L"English", L"Русский", L"中文" };
 static const wchar_t *LOG_MODE[4] = { L"off", L"low", L"high", L"auto" };
@@ -310,6 +358,7 @@ static void klog(const wchar_t *fmt, ...) {
 static const wchar_t *const DRV_DEV[3]  = { L"", L"\\\\.\\EnergyDrv", L"\\\\.\\IBMPmDrv" };
 static const wchar_t *const DRV_NAME[3] = { L"", L"EnergyDrv", L"IBMPmDrv (ThinkPad)" };
 static int g_drv = 0;       /* the driver that answered last (0: none yet) */
+static int g_drvNew = 0;    /* it's a kind nobody has confirmed on hardware yet (IBMPmDrv, older EnergyDrv): ask for reports */
 static int g_maxLevel = 3;  /* the highest mode this keyboard has: 3 = up to Auto, 2 = up to High, 1 = Off/Low */
 static wchar_t g_raw[64]; static int g_rawDrv;  /* the last raw answer and its driver, for the log and the self-test */
 
@@ -386,7 +435,7 @@ static int unknown_answer(int drv) {
 }
 /* the backends: 0..3 = the mode now (or the one just set), -2 = no backlight / unknown answer, -4 = the
    keyboard doesn't have the mode asked for, -5 = the driver didn't take the change; *maxl = its highest mode */
-static int energy_backlight(HANDLE h, int set_level, int *maxl) {
+static int energy_backlight(HANDLE h, int set_level, int *maxl, int *unconfirmed) {
     DWORD cap = 0, st = 0, d = 0, capErr, stErr;
     int capOk = dev_ioctl(h, IOCTL_BACKLIGHT, 0x01, &cap); capErr = g_lastErr;
     int stOk = dev_ioctl(h, IOCTL_BACKLIGHT, 0x32, &st); stErr = g_lastErr;
@@ -398,6 +447,7 @@ static int energy_backlight(HANDLE h, int set_level, int *maxl) {
     int lv = (int)((st >> 1) & 0x7fff), top = capOk && (cap & 1) && (cap >> 1) <= 3 ? (int)(cap >> 1) : -1;  /* -1: not known */
     if (!(st & 1) || lv > 3 || top == 0) return unknown_answer(DRV_ENERGY);
     if (top == 3 && !(st & 0x10000)) return unknown_answer(DRV_ENERGY);  /* models with Auto set 0x8000; without it: no backlight */
+    *unconfirmed = top != 3 || !(st & 0x10000);  /* confirmed on hardware: only capability 3 (Auto) with 0x8000 */
     if (top < 0) top = lv == 3 ? 3 : 2;  /* no capability answer (older models): no Auto unless it shows Auto */
     if (lv > top) top = lv;  /* it shows the mode: it has it */
     *maxl = top;
@@ -406,15 +456,15 @@ static int energy_backlight(HANDLE h, int set_level, int *maxl) {
     static const DWORD f[4] = { 0x00033, 0x10033, 0x20033, 0x30033 };
     return dev_ioctl(h, IOCTL_BACKLIGHT, f[set_level], &d) ? set_level : -5;
 }
-static int pm_backlight(HANDLE h, int set_level, int *maxl) {
+static int pm_backlight(HANDLE h, int set_level, int *maxl, int *unconfirmed) {
     DWORD st = 0, d = 0;
-    if (!dev_ioctl(h, IOCTL_PM_GET, 0, &st)) return -2;
+    if (!dev_ioctl(h, IOCTL_PM_GET, 0, &st)) { swprintf(g_raw, 64, L"status failed (%lu)", g_lastErr); g_rawDrv = DRV_PM; return -2; }
     swprintf(g_raw, 64, L"status 0x%08lX", st); g_rawDrv = DRV_PM;
     int lv = (int)(st & 0xF), top = (int)((st >> 8) & 0xF);
     if ((st & 0x80000000) || (st & 0x50000) != 0x50000 || top < 1) return unknown_answer(DRV_PM);
     if (top > 2) top = 2;  /* this driver has no Auto */
     if (lv > top) return unknown_answer(DRV_PM);
-    *maxl = top;
+    *maxl = top; *unconfirmed = 1;
     if (set_level < 0) return lv;
     if (set_level > top) return -4;
     DWORD v = ((st >> 13) & 0x100) | (st & 0xF0) | (DWORD)set_level;
@@ -430,7 +480,7 @@ static int backlight(int set_level) {
     int res = -1; DWORD err = ERROR_FILE_NOT_FOUND;
     g_raw[0] = 0;
     for (int i = 0; i < 2; i++) {
-        int d = (g_drv == DRV_PM) == (i == 0) ? DRV_PM : DRV_ENERGY, maxl = 3;
+        int d = (g_drv == DRV_PM) == (i == 0) ? DRV_PM : DRV_ENERGY, maxl = 3, unconfirmed = 0;
         HANDLE h = dev_open(d);
         if (h == INVALID_HANDLE_VALUE) {
             DWORD e = GetLastError();
@@ -439,12 +489,12 @@ static int backlight(int set_level) {
             continue;
         }
         g_lastErr = 0;
-        int r = d == DRV_ENERGY ? energy_backlight(h, set_level, &maxl) : pm_backlight(h, set_level, &maxl);
+        int r = d == DRV_ENERGY ? energy_backlight(h, set_level, &maxl, &unconfirmed) : pm_backlight(h, set_level, &maxl, &unconfirmed);
         dev_close(h);
         if (r >= 0 || r <= -4) {  /* it's the driver of this keyboard */
             if (g_drv != d || g_maxLevel != maxl)
                 klog(L"driver: %ls, %ls, modes off..%ls", DRV_NAME[d], g_raw, LOG_MODE[maxl]);
-            g_drv = d; g_maxLevel = maxl;
+            g_drv = d; g_maxLevel = maxl; g_drvNew = unconfirmed;
             if (r == -4) g_lastErr = ERROR_NOT_SUPPORTED;
             return r;
         }
@@ -914,7 +964,10 @@ static void mark_changes(void) {
         dirty |= changed[i];
     }
     int on = dirty || (g_shownLevel >= 0 && g_shownLevel != (int)g_mode && (int)g_mode <= g_maxLevel);  /* the light isn't the saved mode: Fn+Space */
-    if (!on && GetFocus() == apply) SetFocus(GetDlgItem(g_wnd, ID_R0 + mode));  /* a disabled button can't keep the focus */
+    if (!on && GetFocus() == apply) {  /* a disabled button can't keep the focus: the mode's radio, or Hide */
+        HWND r = GetDlgItem(g_wnd, ID_R0 + mode);
+        SetFocus(r && IsWindowEnabled(r) ? r : GetDlgItem(g_wnd, ID_HIDE));
+    }
     EnableWindow(apply, on);
 }
 static void sync_ui(void) {
@@ -993,6 +1046,7 @@ static void tray_menu(void) {
     }
     AppendMenuW(m, MF_SEPARATOR, 0, NULL);
     AppendMenuW(m, MF_STRING | (g_updBusy ? MF_GRAYED : 0), ID_TRAY_UPDATE, T(S_UPD_BUTTON));
+    AppendMenuW(m, MF_STRING, ID_TRAY_REPORT, T(S_TRAY_REPORT));
     AppendMenuW(m, MF_STRING, ID_TRAY_ABOUT, T(S_ABOUT));
     AppendMenuW(m, MF_STRING, ID_TRAY_EXIT, T(S_EXIT));
     SetMenuDefaultItem(m, ID_TRAY_OPEN, FALSE);
@@ -1011,28 +1065,261 @@ static void check_driver_dialog(void) {
     else klog(L"driver check: OK, current %ls", LOG_MODE[r]);
 }
 
+/* ---------- laptop reports ----------
+   After a self-test the user may send a report so new models can be added: Glim fills in a GitHub issue form (in
+   the UI language; the report itself is English, for the maintainer) and opens it in the browser, or copies the
+   report to the clipboard. Glim sends nothing itself. Asked after a self-test whose backlight part failed while a
+   Lenovo driver answered, or that passed on a driver kind nobody has confirmed yet; always from the tray item. */
+enum { REP_NONE, REP_FAIL, REP_NEW, REP_ASK };
+static wchar_t g_stSum[600];  /* the last self-test in English, for the report */
+static int g_repTest = 0;     /* test builds only (GLIM_FAKE + GLIM_REPORT_AUTO=open/copy/later): no dialog */
+
+static void reg_sz(HKEY root, const wchar_t *key, const wchar_t *name, wchar_t *out, DWORD n) {
+    DWORD bytes = n * sizeof(wchar_t); out[0] = 0;
+    if (RegGetValueW(root, key, name, RRF_RT_REG_SZ, NULL, out, &bytes) != ERROR_SUCCESS) out[0] = 0;
+    out[n - 1] = 0;
+    for (wchar_t *c = out; *c; c++) if (*c == L'\r' || *c == L'\n') *c = L' ';
+}
+static const wchar_t BIOS_KEY[] = L"HARDWARE\\DESCRIPTION\\System\\BIOS";
+static void laptop_model(wchar_t *out, size_t n) {  /* "ThinkPad P14s Gen 2a (21A0)": Lenovo's name and machine type */
+    wchar_t ver[128], prod[128], fam[128];
+    reg_sz(HKEY_LOCAL_MACHINE, BIOS_KEY, L"SystemVersion", ver, 128);
+    reg_sz(HKEY_LOCAL_MACHINE, BIOS_KEY, L"SystemProductName", prod, 128);
+    reg_sz(HKEY_LOCAL_MACHINE, BIOS_KEY, L"SystemFamily", fam, 128);
+    const wchar_t *name = ver[0] ? ver : fam[0] ? fam : prod;
+    if (!name[0]) swprintf(out, n, L"unknown");
+    else if (prod[0] && wcscmp(name, prod) != 0) swprintf(out, n, L"%ls (%ls)", name, prod);
+    else swprintf(out, n, L"%ls", name);
+}
+static void windows_version(wchar_t *out, size_t n) {
+    wchar_t dv[32]; DWORD ubr = 0, sz = sizeof ubr;
+    static const wchar_t K[] = L"SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion";
+    reg_sz(HKEY_LOCAL_MACHINE, K, L"DisplayVersion", dv, 32);
+    if (RegGetValueW(HKEY_LOCAL_MACHINE, K, L"UBR", RRF_RT_REG_DWORD, NULL, &ubr, &sz) != ERROR_SUCCESS) ubr = 0;
+    swprintf(out, n, L"Windows %ls%ls%ls (build %lu.%lu)", g_build >= 22000 ? L"11" : L"10", dv[0] ? L" " : L"", dv, g_build, ubr);
+}
+static void replace_dir(wchar_t *t, size_t n, const wchar_t *dir) {
+    static const wchar_t R[] = L"%USERPROFILE%";
+    size_t pl = wcslen(dir), rl = wcslen(R), len = wcslen(t);
+    for (wchar_t *c = t; *c; c++) {
+        size_t left = len - (size_t)(c - t);
+        wchar_t after = c[pl < left ? pl : left];
+        if (pl > left || _wcsnicmp(c, dir, pl) || iswalnum(after) || after == L'_' || after == L'-' || after == L'.') continue;  /* not C:\Users\ann for C:\Users\an */
+        if (len - pl + rl >= n) { *c = 0; return; }  /* no room for the placeholder: cut here rather than leave the folder */
+        memmove(c + rl, c + pl, (left - pl + 1) * sizeof(wchar_t));
+        memcpy(c, R, rl * sizeof(wchar_t));
+        len = len - pl + rl; c += rl - 1;
+    }
+}
+static void hide_user_dir(wchar_t *t, size_t n) {  /* the user's folder (and so the user name) out of file paths */
+    wchar_t *prof = NULL, sp[MAX_PATH];
+    if (SUCCEEDED(SHGetKnownFolderPath(&FOLDERID_Profile, 0, NULL, &prof)) && prof && prof[0]) {
+        replace_dir(t, n, prof);
+        DWORD k = GetShortPathNameW(prof, sp, MAX_PATH);  /* C:\Users\JOHNSM~1 too */
+        if (k && k < MAX_PATH && _wcsicmp(sp, prof) != 0) replace_dir(t, n, sp);
+    }
+    CoTaskMemFree(prof);
+}
+static void log_tail(wchar_t *out, size_t n, int lines) {  /* the last lines of log.txt */
+    static char buf[12288]; static wchar_t w[12288];
+    wchar_t path[MAX_PATH]; DWORD rd = 0; LARGE_INTEGER sz;
+    out[0] = 0;
+    if (lines <= 0) return;
+    swprintf(path, MAX_PATH, L"%ls\\log.txt", g_dir);
+    HANDLE f = CreateFileW(path, GENERIC_READ, FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING, 0, NULL);
+    if (f == INVALID_HANDLE_VALUE) return;
+    int cut = GetFileSizeEx(f, &sz) && sz.QuadPart > (LONGLONG)sizeof buf - 1;
+    if (cut) { LARGE_INTEGER o; o.QuadPart = sz.QuadPart - (LONGLONG)(sizeof buf - 1); SetFilePointerEx(f, o, NULL, FILE_BEGIN); }
+    if (!ReadFile(f, buf, sizeof buf - 1, &rd, NULL)) rd = 0;
+    CloseHandle(f); buf[rd] = 0;
+    char *b = buf;
+    if (cut) { char *nl = strchr(b, '\n'); b = nl ? nl + 1 : b + strlen(b); }  /* not half a line (or half a character) */
+    if (MultiByteToWideChar(CP_UTF8, 0, b, -1, w, 12288) <= 0) return;
+    wchar_t *p = w + wcslen(w);
+    while (p > w && (p[-1] == L'\n' || p[-1] == L'\r')) *--p = 0;  /* the last line's end */
+    for (int k = 0; p > w; p--) if (p[-1] == L'\n' && ++k == lines) break;
+    /* only this run of Glim: lines of earlier runs (other days, other versions) are noise in a report */
+    for (wchar_t *q = p; (q = wcsstr(q, L" started")) != NULL; q++) {
+        wchar_t *ls = q;
+        while (ls > w && ls[-1] != L'\n') ls--;
+        if ((q[8] == L',' || q[8] == L' ') && q - ls > 21 && !wcsncmp(ls + 21, L"Glim ", 5) && ls > p) p = ls;  /* "<date> <time>  Glim 1.2 started" */
+    }
+    static wchar_t t[16384]; size_t o = 0;  /* room for the placeholders */
+    for (; *p && o + 1 < 16384; p++) if (*p != L'\r') t[o++] = *p;
+    t[o] = 0;
+    hide_user_dir(t, 16384);
+    wchar_t *q = t; size_t len = wcslen(q);
+    while (len + 1 > n) {  /* too long: the oldest lines go, the newest stay */
+        wchar_t *nl = wcschr(q, L'\n');
+        if (!nl) { q += len - (n - 1); len = n - 1; break; }
+        len -= (size_t)(nl + 1 - q); q = nl + 1;
+    }
+    memcpy(out, q, (len + 1) * sizeof(wchar_t));
+}
+static void build_report(wchar_t *out, size_t n, int loglines) {  /* English, '\n' line ends */
+    static const wchar_t *const LANG_CODE[L_COUNT] = { L"en", L"ru", L"zh" };
+    wchar_t model[300], win[96], ver[128], prod[128], fam[128], bios[128], maker[128], drv[160];
+    static wchar_t tail[6000], auto_[MAX_PATH];
+    laptop_model(model, 300); windows_version(win, 96);
+    reg_sz(HKEY_LOCAL_MACHINE, BIOS_KEY, L"SystemManufacturer", maker, 128);
+    reg_sz(HKEY_LOCAL_MACHINE, BIOS_KEY, L"SystemVersion", ver, 128);
+    reg_sz(HKEY_LOCAL_MACHINE, BIOS_KEY, L"SystemFamily", fam, 128);
+    reg_sz(HKEY_LOCAL_MACHINE, BIOS_KEY, L"SystemProductName", prod, 128);
+    reg_sz(HKEY_LOCAL_MACHINE, BIOS_KEY, L"BIOSVersion", bios, 128);
+    if (g_raw[0]) swprintf(drv, 160, L"%ls - %ls - modes off..%ls", DRV_NAME[g_rawDrv], g_raw, LOG_MODE[g_maxLevel]);
+    else swprintf(drv, 160, L"none answered (EnergyDrv, IBMPmDrv; error %lu)", g_lastErr);
+    log_tail(tail, 6000, loglines);
+    swprintf(out, n,
+        L"Glim %ls, %ls, UI language %ls\n"
+        L"Laptop: %ls | maker \"%ls\", version \"%ls\", family \"%ls\", product \"%ls\", BIOS \"%ls\"\n"
+        L"Driver: %ls\n"
+        L"Self-test: %ls\n"
+        L"Settings: mode %ls, keep manual changes (Fn+Space) %ls, force re-apply after sleep %ls, autostart %ls\n"
+        L"Log, last lines (user folder hidden):\n%ls",
+        APP_VERSION, win, LANG_CODE[g_lang],
+        model, maker, ver, fam, prod, bios, drv,
+        g_stSum[0] ? g_stSum : L"not run", LOG_MODE[g_mode < 4 ? g_mode : 0], g_respect ? L"on" : L"off", g_onwake ? L"on" : L"off",
+        run_target(auto_) ? L"on" : L"off", tail);
+}
+static void url_add(wchar_t *url, size_t n, const wchar_t *s) {  /* percent-encoded UTF-8 */
+    static char u8[24000]; static const char HEX[] = "0123456789ABCDEF";
+    int k = WideCharToMultiByte(CP_UTF8, 0, s, -1, u8, sizeof u8, NULL, NULL);
+    size_t o = wcslen(url);
+    for (int i = 0; i < k - 1 && o + 4 < n; i++) {
+        unsigned char c = (unsigned char)u8[i];
+        if ((c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z') || (c >= '0' && c <= '9') || c == '-' || c == '.' || c == '_' || c == '~') url[o++] = c;
+        else { url[o++] = L'%'; url[o++] = HEX[c >> 4]; url[o++] = HEX[c & 15]; }
+    }
+    url[o] = 0;
+}
+#define REPORT_URL_MAX 4000  /* GitHub refuses long addresses (and doubles them on its sign-in page): fewer log lines then */
+static void report_url(wchar_t *url, size_t n) {
+    static const wchar_t *const TPL[L_COUNT] = { L"laptop-report-en.yml", L"laptop-report-ru.yml", L"laptop-report-zh.yml" };
+    static wchar_t rep[12000]; wchar_t model[300], title[340];
+    laptop_model(model, 300); swprintf(title, 340, L"[Laptop] %ls", model);
+    for (int lines = 30; ; lines -= 5) {
+        build_report(rep, 12000, lines > 0 ? lines : 0);
+        swprintf(url, n, L"%ls/issues/new?template=%ls&title=", APP_URL, TPL[g_lang]);
+        url_add(url, n, title);
+        wcscat(url, L"&model="); url_add(url, n, model);
+        wcscat(url, L"&report="); url_add(url, n, rep);
+        if (wcslen(url) <= REPORT_URL_MAX || lines <= 0) break;
+    }
+}
+static int copy_text(const wchar_t *t) {
+    size_t n = (wcslen(t) + 1) * sizeof(wchar_t);
+    HGLOBAL g = GlobalAlloc(GMEM_MOVEABLE, n); void *m; int ok = 0, opened = 0;
+    if (!g || !(m = GlobalLock(g))) { if (g) GlobalFree(g); return 0; }
+    memcpy(m, t, n); GlobalUnlock(g);
+    /* the clipboard needs an owner window (without one SetClipboardData fails): a message-only one for /selftest */
+    HWND tmp = g_wnd ? NULL : CreateWindowExW(0, L"STATIC", L"", 0, 0, 0, 0, 0, HWND_MESSAGE, NULL, g_inst, NULL);
+    for (int i = 0; i < 10 && !(opened = OpenClipboard(g_wnd ? g_wnd : tmp)); i++) Sleep(50);  /* another program may hold it */
+    if (opened) { EmptyClipboard(); ok = SetClipboardData(CF_UNICODETEXT, g) != NULL; CloseClipboard(); }
+    if (!ok) GlobalFree(g);
+    if (tmp) DestroyWindow(tmp);
+    return ok;
+}
+static int copy_crlf(const wchar_t *t, size_t *len) {  /* Windows line ends for Notepad & co. */
+    static wchar_t crlf[32000]; size_t o = 0;
+    for (const wchar_t *c = t; *c && o + 2 < 32000; c++) { if (*c == L'\n') crlf[o++] = L'\r'; crlf[o++] = *c; }
+    crlf[o] = 0; *len = o;
+    return copy_text(crlf);
+}
+static void report_copy(int nobrowser) {  /* nobrowser: the form couldn't be opened, say where to paste it */
+    static wchar_t rep[12000], t[16000]; wchar_t model[300]; size_t o;
+    laptop_model(model, 300); build_report(rep, 12000, 60);
+    swprintf(t, 16000, L"Glim laptop report: %ls\n%ls/issues/new/choose\n\n%ls\n\n%ls", model, APP_URL, T(S_REP_QUESTIONS), rep);
+    int ok = copy_crlf(t, &o);
+    klog(L"report: %ls (%u chars)", ok ? L"copied" : L"couldn't copy", (unsigned)o);
+    if (g_repTest) return;
+    wchar_t msg[700];
+    if (!ok) swprintf(msg, 700, L"%ls", T(S_REP_COPYFAIL));
+    else if (nobrowser) swprintf(msg, 700, T(S_REP_NOBROWSER), APP_URL L"/issues/new/choose");
+    else swprintf(msg, 700, L"%ls", T(S_REP_COPIED));
+    MessageBoxW(g_wnd && IsWindowVisible(g_wnd) ? g_wnd : NULL, msg, T(S_REP_TITLE), MB_OK | (ok ? MB_ICONINFORMATION : MB_ICONWARNING));
+}
+static void report_open(void) {
+    static wchar_t url[REPORT_URL_MAX + 3000], rep[12000]; size_t o;
+    report_url(url, REPORT_URL_MAX + 3000);
+    /* GitHub doesn't always fill the form's fields from the address (only the title, in 2026): the report is
+       on the clipboard too, the form and the button say to paste it */
+    build_report(rep, 12000, 60);
+    int ok = copy_crlf(rep, &o);
+    klog(L"report: opening the form (%u chars), the report %ls", (unsigned)wcslen(url), ok ? L"copied for pasting" : L"not copied");
+    if (g_repTest) {  /* tests read the address from a file */
+        wchar_t p[MAX_PATH]; swprintf(p, MAX_PATH, L"%ls\\report-url.txt", g_dir);
+        HANDLE f = CreateFileW(p, GENERIC_WRITE, 0, NULL, CREATE_ALWAYS, 0, NULL);
+        if (f != INVALID_HANDLE_VALUE) { static char u8[REPORT_URL_MAX * 2 + 8000]; DWORD w; int k = WideCharToMultiByte(CP_UTF8, 0, url, -1, u8, sizeof u8, NULL, NULL); if (k > 1) WriteFile(f, u8, (DWORD)(k - 1), &w, NULL); CloseHandle(f); }
+        return;
+    }
+    SHELLEXECUTEINFOW se = { sizeof se };
+    se.fMask = SEE_MASK_NOASYNC | SEE_MASK_FLAG_NO_UI;  /* NOASYNC: /selftest exits right after */
+    se.hwnd = g_wnd; se.lpVerb = L"open"; se.lpFile = url; se.nShow = SW_SHOWNORMAL;
+    if (!ShellExecuteExW(&se)) { klog(L"report: couldn't open the browser (%lu) - copied instead", GetLastError()); report_copy(1); }
+}
+static void report_dialog(int kind, const wchar_t *details, int fails, int warns) {
+    static const wchar_t *const KIND[4] = { L"", L"self-test failed", L"new kind of laptop", L"asked from the tray" };
+    klog(L"report: offered (%ls)", KIND[kind]);
+    if (g_repTest) {
+        wchar_t a[16] = L"";
+        GetEnvironmentVariableW(L"GLIM_REPORT_AUTO", a, 16);
+        if (!wcscmp(a, L"open")) report_open(); else if (!wcscmp(a, L"copy")) report_copy(0);
+        return;
+    }
+    TASKDIALOG_BUTTON b[3] = { { 1001, T(S_REP_OPEN) }, { 1002, T(S_REP_COPY) }, { 1003, T(S_REP_LATER) } };
+    TASKDIALOGCONFIG tc = { sizeof tc };
+    tc.hwndParent = g_wnd && IsWindowVisible(g_wnd) ? g_wnd : NULL; tc.hInstance = g_inst;
+    tc.dwFlags = TDF_USE_COMMAND_LINKS | TDF_ALLOW_DIALOG_CANCELLATION | TDF_POSITION_RELATIVE_TO_WINDOW | (fails ? TDF_EXPANDED_BY_DEFAULT : 0);
+    tc.pszWindowTitle = T(S_REP_TITLE);
+    tc.pszMainIcon = fails ? TD_WARNING_ICON : TD_INFORMATION_ICON;
+    tc.pszMainInstruction = T(kind == REP_FAIL ? S_REP_FAIL_MAIN : kind == REP_NEW ? S_REP_NEW_MAIN : S_REP_ASK_MAIN);
+    tc.pszContent = T(kind == REP_FAIL ? S_REP_FAIL_TEXT : kind == REP_NEW ? S_REP_NEW_TEXT : S_REP_ASK_TEXT);
+    tc.pszExpandedInformation = details;
+    tc.pszExpandedControlText = tc.pszCollapsedControlText = T(S_REP_DETAILS);
+    tc.pButtons = b; tc.cButtons = 3; tc.nDefaultButton = 1001;
+    tc.pszFooter = T(S_REP_FOOT); tc.pszFooterIcon = TD_INFORMATION_ICON;
+    int btn = 0;
+    if (FAILED(TaskDialogIndirect(&tc, &btn, NULL, NULL))) {  /* no TaskDialog: the plain result and a yes/no */
+        (void)warns;
+        MessageBoxW(tc.hwndParent, details, T(S_T_TITLE), MB_OK | (fails ? MB_ICONERROR : MB_ICONINFORMATION));
+        if (MessageBoxW(tc.hwndParent, T(S_REP_OPEN), T(S_REP_TITLE), MB_YESNO | MB_ICONQUESTION) == IDYES) btn = 1001;
+    }
+    klog(L"report: %ls", btn == 1001 ? L"form" : btn == 1002 ? L"copy" : L"not now");
+    if (btn == 1001) report_open(); else if (btn == 1002) report_copy(0);
+}
+
 /* ---------- self-test ---------- */
-static int self_test(void) {  /* returns the number of failures */
-    static wchar_t rep[6144]; wchar_t line[400]; int fails = 0, warns = 0; rep[0] = 0;
+/* report: 1 = from the tray item (always offers the report). Returns the number of failures. */
+static int self_test(int report) {
+    static int busy = 0, askedNew = 0;
+    if (busy) { klog(L"self-test: already running"); return -1; }  /* its dialog pumps messages: the tray, a forwarded /selftest */
+    busy = 1;
+    static wchar_t rep[6144]; wchar_t line[400], en[80]; int fails = 0, warns = 0, blfail = 0; rep[0] = 0;
+    static const wchar_t *const ERR_EN[6] = { L"", L"not found", L"no backlight control or unknown answer", L"access denied", L"mode not available", L"change not accepted" };
 #define ADD(...) do { swprintf(line, 400, __VA_ARGS__); wcscat(rep, line); wcscat(rep, L"\r\n"); } while (0)
+#define SUM(...) do { swprintf(en, 80, __VA_ARGS__); if (wcslen(g_stSum) + wcslen(en) < 598) wcscat(g_stSum, en); } while (0)
+    g_stSum[0] = 0;
     int cur = backlight(-1), ok = cur >= 0 && cur <= 3;
-    if (ok) ADD(T(S_T_DRVOK), STR[g_lang][S_MODE0 + cur]); else { ADD(T(S_T_DRVFAIL), err_text(cur), g_lastErr); fails++; }
+    if (ok) { ADD(T(S_T_DRVOK), STR[g_lang][S_MODE0 + cur]); SUM(L"driver ok, was %ls;", LOG_MODE[cur]); }
+    else { ADD(T(S_T_DRVFAIL), err_text(cur), g_lastErr); fails++; blfail++; SUM(L"driver: %ls (%d, error %lu)", cur >= -5 && cur < 0 ? ERR_EN[-cur] : L"?", cur, g_lastErr); }
     if (g_raw[0]) ADD(T(S_T_RAW), DRV_NAME[g_rawDrv], g_raw);  /* for reports of new models */
+    int answered = g_raw[0] != 0;  /* a Lenovo driver is there and said something */
     if (ok) {
         int tried = 0, changed = 0;  /* modes other than the one it was in */
         for (int lv = 0; lv <= 3; lv++) {
-            if (lv > g_maxLevel) { ADD(T(S_T_NOMODE), STR[g_lang][S_MODE0 + lv]); continue; }
+            if (lv > g_maxLevel) { ADD(T(S_T_NOMODE), STR[g_lang][S_MODE0 + lv]); SUM(L" %ls n/a,", LOG_MODE[lv]); continue; }
             int r = backlight(lv); Sleep(250); int rb = backlight(-1);
             if (lv != cur) { tried++; changed += r == lv && rb == lv; }
-            if (r != lv) { ADD(T(S_T_SETFAIL), STR[g_lang][S_MODE0 + lv]); fails++; }
-            else if (rb != lv) { ADD(T(S_T_SETWARN), STR[g_lang][S_MODE0 + lv], rb); warns++; }
-            else ADD(T(S_T_SETOK), STR[g_lang][S_MODE0 + lv]);
+            if (r != lv) { ADD(T(S_T_SETFAIL), STR[g_lang][S_MODE0 + lv]); fails++; blfail++; SUM(L" %ls set failed (%d, error %lu),", LOG_MODE[lv], r, g_lastErr); }
+            else if (rb != lv) { ADD(T(S_T_SETWARN), STR[g_lang][S_MODE0 + lv], rb); warns++; SUM(L" %ls reads back %d,", LOG_MODE[lv], rb); }
+            else { ADD(T(S_T_SETOK), STR[g_lang][S_MODE0 + lv]); SUM(L" %ls ok,", LOG_MODE[lv]); }
         }
-        if (tried && !changed) { ADD(L"%ls", T(S_T_NOEFFECT)); fails++; }
-        int m = eff_mode(), back = m <= g_maxLevel ? m : cur;  /* a saved mode it doesn't have (said above): the one before the test */
+        if (tried && !changed) { ADD(L"%ls", T(S_T_NOEFFECT)); fails++; blfail++; SUM(L" NO EFFECT,"); }
+        int m = eff_mode(), back = cur;  /* the light as the test found it (not, say, the default Off of a never applied install) */
         int r = backlight(back);
-        if (r == back) ADD(T(S_T_RESTOK), STR[g_lang][S_MODE0 + back]); else { ADD(T(S_T_RESTFAIL), STR[g_lang][S_MODE0 + back]); fails++; }
-        if (back != m) warns++;
+        if (r == back) { ADD(T(S_T_RESTOK), STR[g_lang][S_MODE0 + back]); SUM(L" restored %ls", LOG_MODE[back]); }
+        else { ADD(T(S_T_RESTFAIL), STR[g_lang][S_MODE0 + back]); fails++; blfail++; SUM(L" restore %ls FAILED", LOG_MODE[back]); }
+        if (m > g_maxLevel) { warns++; SUM(L" (saved mode %ls n/a)", LOG_MODE[m]); }  /* said above (S_T_NOMODE) */
         r = backlight(-1); if (r >= 0 && r <= 3) g_lastSet = g_lastSeen = r;  /* whatever it is now isn't a Fn+Space */
     }
     DWORD keep = g_mode; save_settings(); g_mode = 99; load_settings();
@@ -1044,14 +1331,25 @@ static int self_test(void) {  /* returns the number of failures */
     wcscat(rep, L"\r\n");
     ADD(T(S_T_SUM), fails ? T(S_T_BAD) : T(S_T_GOOD), fails, warns);
     ADD(T(S_T_LOG), g_dir);
+    SUM(L"; errors %d, warnings %d", fails, warns);
 #undef ADD
+#undef SUM
     klog(L"self-test: fails=%d warns=%d", fails, warns);
     wchar_t rp[MAX_PATH]; swprintf(rp, MAX_PATH, L"%ls\\selftest.txt", g_dir);
     HANDLE f = CreateFileW(rp, GENERIC_WRITE, FILE_SHARE_READ, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
-    if (f != INVALID_HANDLE_VALUE) { static char u8[20000]; int n = WideCharToMultiByte(CP_UTF8, 0, rep, -1, u8, sizeof u8, NULL, NULL);
+    if (f != INVALID_HANDLE_VALUE) {  /* people paste it into reports: without the user's folder */
+        static wchar_t clean[8192]; static char u8[24000]; wcscpy(clean, rep); hide_user_dir(clean, 8192);
+        int n = WideCharToMultiByte(CP_UTF8, 0, clean, -1, u8, sizeof u8, NULL, NULL);
         DWORD w; if (n > 1) WriteFile(f, u8, (DWORD)(n - 1), &w, NULL); CloseHandle(f); }
-    if (!g_quiet) MessageBoxW(g_wnd, rep, T(S_T_TITLE), MB_OK | (fails ? MB_ICONERROR : warns ? MB_ICONWARNING : MB_ICONINFORMATION));
+    int kind = report ? REP_ASK : blfail && answered ? REP_FAIL : !blfail && ok && g_drvNew && !askedNew ? REP_NEW : REP_NONE;
+    if (kind == REP_NEW) askedNew = 1;  /* once per run: not on every Self-test click */
+    if (!g_quiet) {
+        if (kind != REP_NONE) report_dialog(kind, rep, fails, warns);
+        else if (g_repTest) klog(L"self-test: result shown, no report offered");
+        else MessageBoxW(g_wnd, rep, T(S_T_TITLE), MB_OK | (fails ? MB_ICONERROR : warns ? MB_ICONWARNING : MB_ICONINFORMATION));
+    }
     if (g_wnd) update_status();
+    busy = 0;
     return fails;
 }
 
@@ -1421,7 +1719,8 @@ static LRESULT CALLBACK WndProc(HWND h, UINT msg, WPARAM wp, LPARAM lp) {
             }
             return 0;
         case ID_HIDE: case IDCANCEL: ShowWindow(h, SW_HIDE); return 0;  /* IDCANCEL: Esc */
-        case ID_TEST: self_test(); return 0;
+        case ID_TEST: self_test(0); return 0;
+        case ID_TRAY_REPORT: self_test(1); return 0;
         case ID_ABOUT: case ID_TRAY_ABOUT: show_about(); return 0;
         case ID_UPDATE: case ID_TRAY_UPDATE: upd_start_check(); return 0;
         case ID_TRAY_OPEN: show_window(); return 0;
@@ -1444,7 +1743,7 @@ static LRESULT CALLBACK WndProc(HWND h, UINT msg, WPARAM wp, LPARAM lp) {
     case WM_SHOWME: show_window(); return 0;
     case WM_GLIM_VERSION: return (LRESULT)APP_FILEVER;
     case WM_GLIM_SELFTEST: {  /* "Glim.exe /selftest" while this copy is running: test here, so the poll doesn't take the test for Fn+Space */
-        int q = g_quiet; g_quiet = wp != 0; int fails = self_test(); g_quiet = q;
+        int q = g_quiet; g_quiet = wp != 0; int fails = self_test(0); g_quiet = q;  /* -1: one is already running */
         return fails ? 2 : 1;
     }
     case WM_GLIM_TEST_DISPLAY: if (g_fake[0]) display_state((DWORD)wp); return 0;
@@ -1463,8 +1762,10 @@ static LRESULT CALLBACK WndProc(HWND h, UINT msg, WPARAM wp, LPARAM lp) {
             lastWall = wall; lastRun = run;
             SetTimer(h, T_POLL, ms(2000) < 200 ? 200 : ms(2000), NULL);
 
+            static int lost = 0;  /* the driver stopped answering after it had worked */
             int cur = backlight(-1);
-            if (cur < 0 || cur > 3) { if (g_trayLevel >= 0) show_status(cur); return 0; }  /* the driver stopped answering: say so */
+            if (cur < 0 || cur > 3) { if (g_lastSet >= 0) lost = 1; if (g_trayLevel >= 0) show_status(cur); return 0; }  /* say so */
+            if (lost) { lost = 0; klog(L"driver answers again - watching for a reset"); begin_grace(ms(15000)); }  /* like a wake: not Fn+Space */
             int exp = eff_mode();
             if (GetTickCount64() < g_graceUntil) {
                 /* system window (after login / wake): revert any change made by firmware or Lenovo apps
@@ -1603,10 +1904,11 @@ int WINAPI wWinMain(HINSTANCE inst, HINSTANCE prev, PWSTR cmd, int show) {
     GetEnvironmentVariableW(L"GLIM_FAKE_DRV", g_fakeDrv, 16);
 #ifdef GLIM_TEST_BUILD
     { wchar_t ev[8]; g_updTest = g_fake[0] && GetEnvironmentVariableW(L"GLIM_UPDATE_AUTO", ev, 8); }
+    { wchar_t ev[8]; g_repTest = g_fake[0] && GetEnvironmentVariableW(L"GLIM_REPORT_AUTO", ev, 8); }
 #endif
     init_dir();
     load_settings();
-    if (cmd && wcsstr(cmd, L"/selftest"))      { int r = remote_self_test(); return r >= 0 ? r : (self_test() ? 1 : 0); }
+    if (cmd && wcsstr(cmd, L"/selftest"))      { int r = remote_self_test(); return r >= 0 ? r : (self_test(0) ? 1 : 0); }
     if (cmd && wcsstr(cmd, L"/autostart on"))  { wchar_t p[MAX_PATH], self[MAX_PATH]; set_autostart(1); self_path(self);
                                                  return run_target(p) && !_wcsicmp(p, self) ? 0 : 1; }
     if (cmd && wcsstr(cmd, L"/autostart off")) { set_autostart(0); return 0; }

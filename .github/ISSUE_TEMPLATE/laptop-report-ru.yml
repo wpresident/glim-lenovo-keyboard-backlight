@@ -1,0 +1,62 @@
+name: Отчёт о ноутбуке (Русский)
+description: Как Glim работает на вашем ноутбуке. Отчёты помогают добавлять новые модели и исправлять ошибки.
+title: "[Laptop] "
+labels: ["laptop report"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Спасибо! Проще всего так: в меню Glim в трее → **Сообщить о ноутбуке…**. Первые два поля заполнятся сами; если они пустые, щёлкните в поле отчёта и нажмите **Ctrl+V** — Glim уже скопировал отчёт.
+  - type: input
+    id: model
+    attributes:
+      label: Модель ноутбука
+      description: Например, «Lenovo XiaoXin Air 15 IWC11 (83UF)» или «ThinkPad P14s Gen 2a». Она же — в строке «Laptop:» отчёта.
+    validations:
+      required: true
+  - type: textarea
+    id: report
+    attributes:
+      label: Отчёт Glim
+      description: Его заполняет Glim — или нажмите здесь Ctrl+V, Glim его скопировал. Пишете вручную? Вставьте `selftest.txt` из `%LOCALAPPDATA%\Glim` и версию Windows.
+      render: text
+    validations:
+      required: true
+  - type: dropdown
+    id: selftest
+    attributes:
+      label: Самотест пройден?
+      options:
+        - Да
+        - Нет
+        - Не запускался
+    validations:
+      required: true
+  - type: dropdown
+    id: keeps
+    attributes:
+      label: Держит ли Glim ваш режим подсветки в обычной работе?
+      description: Самотест проверяет только, что Glim умеет включать режимы. Здесь — о том, что происходит потом.
+      options:
+        - Да, всегда
+        - В основном, но иногда подсветка меняется сама
+        - Нет
+        - Пока рано говорить
+    validations:
+      required: true
+  - type: checkboxes
+    id: changes
+    attributes:
+      label: Когда подсветка всё-таки меняется сама, пока Glim работает?
+      description: Оставьте пустым, если такого не бывает.
+      options:
+        - label: после перезагрузки или выключения
+        - label: после сна
+        - label: после гибернации
+        - label: когда экран гаснет или включается
+        - label: в другое время
+  - type: textarea
+    id: notes
+    attributes:
+      label: Что-нибудь ещё
+      description: "Какой режим вы хотите и что происходит вместо этого; какие ещё программы Lenovo стоят (Vantage, PC Manager). Если меняли подсветку через Fn+Пробел, напишите: при включённой галочке «Учитывать ручное переключение (Fn+Пробел) до перезагрузки» Glim держит такой режим до перезагрузки."

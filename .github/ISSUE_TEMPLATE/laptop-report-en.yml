@@ -1,0 +1,62 @@
+name: Laptop report (English)
+description: How Glim works on your laptop. Reports help add new models and fix problems.
+title: "[Laptop] "
+labels: ["laptop report"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you! The easiest way: in Glim, tray menu → **Report this laptop…**. It fills in the first two fields; if they come up empty, click the report field and press **Ctrl+V** - Glim has copied the report.
+  - type: input
+    id: model
+    attributes:
+      label: Laptop model
+      description: For example "Lenovo XiaoXin Air 15 IWC11 (83UF)" or "ThinkPad P14s Gen 2a". It's also in the "Laptop:" line of the report.
+    validations:
+      required: true
+  - type: textarea
+    id: report
+    attributes:
+      label: Glim's report
+      description: Filled in by Glim - or press Ctrl+V here, Glim has copied it. Writing by hand? Paste `selftest.txt` from `%LOCALAPPDATA%\Glim` and your Windows version.
+      render: text
+    validations:
+      required: true
+  - type: dropdown
+    id: selftest
+    attributes:
+      label: Did the self-test pass?
+      options:
+        - "Yes"
+        - "No"
+        - I didn't run it
+    validations:
+      required: true
+  - type: dropdown
+    id: keeps
+    attributes:
+      label: Does Glim keep your backlight mode in everyday use?
+      description: The self-test only checks that Glim can set the modes. This is about what happens later.
+      options:
+        - Yes, always
+        - Mostly, but sometimes the backlight changes by itself
+        - "No"
+        - Too early to tell
+    validations:
+      required: true
+  - type: checkboxes
+    id: changes
+    attributes:
+      label: When does the backlight still change by itself while Glim runs?
+      description: Leave empty if it never does.
+      options:
+        - label: after a restart or shutdown
+        - label: after sleep
+        - label: after hibernation
+        - label: when the screen turns off or back on
+        - label: at other times
+  - type: textarea
+    id: notes
+    attributes:
+      label: Anything else
+      description: "The mode you want and what happens instead; other Lenovo apps you use (Vantage, PC Manager). If you changed the light with Fn+Space, say so: with \"Keep manual changes\" on, Glim keeps that until restart."

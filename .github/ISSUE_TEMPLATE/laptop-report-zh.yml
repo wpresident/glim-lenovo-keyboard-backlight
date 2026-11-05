@@ -1,0 +1,62 @@
+name: 笔记本报告（中文）
+description: Glim 在您的笔记本上表现如何。报告能帮助我们添加新机型、修复问题。
+title: "[Laptop] "
+labels: ["laptop report"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        谢谢！最简单的方法：在 Glim 托盘菜单中点击 **报告此笔记本…**，前两项会自动填写；如果是空的，请点击报告栏并按 **Ctrl+V**——Glim 已经复制了报告。
+  - type: input
+    id: model
+    attributes:
+      label: 笔记本型号
+      description: 例如“Lenovo XiaoXin Air 15 IWC11 (83UF)”或“ThinkPad P14s Gen 2a”。报告中“Laptop:”一行也有。
+    validations:
+      required: true
+  - type: textarea
+    id: report
+    attributes:
+      label: Glim 的报告
+      description: 由 Glim 自动填写——或在这里按 Ctrl+V，Glim 已复制了报告。手动填写？请粘贴 `%LOCALAPPDATA%\Glim` 中的 `selftest.txt` 和您的 Windows 版本。
+      render: text
+    validations:
+      required: true
+  - type: dropdown
+    id: selftest
+    attributes:
+      label: 自检通过了吗？
+      options:
+        - 是
+        - 否
+        - 没有运行
+    validations:
+      required: true
+  - type: dropdown
+    id: keeps
+    attributes:
+      label: 日常使用中 Glim 能保持您的背光模式吗？
+      description: 自检只检查 Glim 能否设置各模式。这里问的是之后的情况。
+      options:
+        - 能，一直正常
+        - 大多数时候能，但有时背光会自行改变
+        - 不能
+        - 还说不准
+    validations:
+      required: true
+  - type: checkboxes
+    id: changes
+    attributes:
+      label: Glim 运行时，背光在什么时候仍会自行改变？
+      description: 如果从未发生，请留空。
+      options:
+        - label: 重启或关机后
+        - label: 睡眠后
+        - label: 休眠后
+        - label: 屏幕关闭或重新打开时
+        - label: 其他时候
+  - type: textarea
+    id: notes
+    attributes:
+      label: 其他补充
+      description: 您想要的模式以及实际发生的情况；安装了哪些联想软件（Vantage、联想电脑管家）。如果用 Fn+空格 改过背光，请说明——勾选“保留手动切换（Fn+空格）直到重启”时，Glim 会保持该模式直到重启。

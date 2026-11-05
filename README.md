@@ -17,7 +17,7 @@ On many Lenovo laptops the keyboard backlight doesn't stay the way you set it: X
 - Tray icon that shows the current mode and switches it
 - Follows Windows' **dark mode** and display scaling
 - **Check for updates** on request (never on its own)
-- Built-in **self-test** and log
+- Built-in **self-test** and log, and **Report this laptop**: a ready report for GitHub that helps add new models
 - English, Русский, 中文
 - One portable exe: no installer, no telemetry
 
@@ -27,7 +27,15 @@ On many Lenovo laptops the keyboard backlight doesn't stay the way you set it: X
   - Xiaoxin, IdeaPad, ThinkBook: **Lenovo Energy Management**
   - ThinkPad: **Lenovo Power Management** driver
 
-Tested on Lenovo Xiaoxin Air 15 (2026) and ThinkBook 14+ with Windows 11. ThinkPad support is new: if you have a ThinkPad, please tell us how it works for you (see Notes). Click **Self-test** to check your model.
+Click **Self-test** to check your model.
+
+### Tested laptops
+| Laptop | Driver | Works |
+|---|---|---|
+| Lenovo XiaoXin Air 15 IWC11 (83UF), Windows 11 | Energy Management | yes |
+| Lenovo ThinkBook 14 G7+ IAH (21TK), Windows 11 | Energy Management | yes |
+
+ThinkPad support is new and not confirmed yet. Your laptop isn't listed, or Glim doesn't work on it? Please [report it](#report-your-laptop): that's how new models get added.
 
 ## Download
 Get `Glim.exe` from the [latest release](../../releases/latest). The release notes list its SHA256.
@@ -52,6 +60,9 @@ Glim then lives in the tray. Closing the window hides it; use **Exit** in the tr
 
 ### Updating
 Click **Check for updates** (in the window or the tray menu). If there is a newer release, Glim opens its page. Exit Glim from the tray menu, save the new `Glim.exe` over the old one and start it: settings and autostart are kept.
+
+### Report your laptop
+In Glim: tray menu → **Report this laptop…**. Glim runs the self-test (the keyboard light goes through its modes for a moment) and opens a [report form](../../issues/new/choose) on GitHub in its interface language, with the report filled in (if a field comes up empty, press Ctrl+V there: the report is copied too): the laptop model, Windows version, what the Lenovo driver answers, the self-test and the last lines of the log (your user name is removed). Nothing is published until you submit the form, and you can edit everything there; you also answer a few questions (for example, whether the backlight still changes after hibernation). No GitHub account? Choose **Copy the report** and post it anywhere. Glim also offers this after a self-test that fails while a Lenovo driver answers, or on a kind of laptop nobody has confirmed yet.
 
 ### Command line
 ```
@@ -83,11 +94,10 @@ Every push is also built by [GitHub Actions](.github/workflows/build.yml).
 - For 90 seconds after sign-in and 15 seconds after waking up or the screen turning back on, Glim undoes any change of the backlight, including Fn+Space: that is how it catches the firmware's reset. Press Fn+Space again a bit later.
 - An antivirus may flag a new, unsigned release until it builds up reputation. That is a false positive: you can check the file on [VirusTotal](https://www.virustotal.com) by its SHA256 and report it to your antivirus vendor.
 - Based on research by [gonwan.com](https://www.gonwan.com/2025/04/11/keyboard-backlight-control-on-lenovo-ideapad-xiaoxin-models/).
-- Something doesn't work on your model, or it works on a model not listed above? Open an [issue](../../issues) with your model and `selftest.txt` from `%LOCALAPPDATA%\Glim` (it shows what the driver answers).
 - Not affiliated with Lenovo. Use at your own risk.
 
 ## Privacy
-Glim sends nothing anywhere. It connects to the internet (GitHub) only when you click **Check for updates**.
+Glim sends nothing anywhere. It connects to the internet (GitHub) only when you click **Check for updates**. **Report this laptop** only opens a form in your browser (or copies the report); you decide whether to submit it.
 
 ## License
 [MIT](LICENSE)
