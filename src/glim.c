@@ -1,4 +1,5 @@
-// Glim — tray utility that keeps the keyboard backlight mode on Lenovo laptops (Xiaoxin, IdeaPad, ThinkBook) via \\.\EnergyDrv
+// Glim — tray utility that keeps the keyboard backlight mode on Lenovo laptops (Xiaoxin, IdeaPad, ThinkBook via \\.\EnergyDrv,
+// ThinkPad via \\.\IBMPmDrv)
 // Build: see build.sh
 #ifndef UNICODE
 #define UNICODE
@@ -125,20 +126,20 @@ enum { S_MODE0, S_MODE1, S_MODE2, S_MODE3, S_GROUP, S_AUTOSTART, S_ONWAKE, S_TES
        S_T_REGOK, S_T_REGFAIL, S_T_AUTOOK, S_T_AUTOFAIL, S_T_AUTOOFF, S_T_SUM, S_T_GOOD, S_T_BAD, S_T_LOG,
        S_RESPECT, S_CUR_MANUAL, S_RESTORE, S_ABOUT, S_ABOUT_TITLE, S_ABOUT_TEXT, S_ABOUT_FOOT, S_TAKEOVER_FAIL, S_OTHER_RIGHTS,
        S_UPD_BUTTON, S_UPD_CHECKING, S_UPD_TITLE, S_UPD_LATEST, S_UPD_ASK, S_UPD_FAIL, S_UPD_E_NET, S_UPD_E_FORMAT,
-       S_UPD_E_LIMIT, S_UPD_E_NOFILE, S_AUTO_GONE, S_AUTO_OLDER, S_AUTO_TEMP, S_COUNT };
+       S_UPD_E_LIMIT, S_UPD_E_NOFILE, S_AUTO_GONE, S_AUTO_OLDER, S_AUTO_TEMP, S_E_NOMODE, S_T_RAW, S_T_NOMODE, S_E_REFUSED, S_T_NOEFFECT, S_COUNT };
 
 static const wchar_t *STR[L_COUNT][S_COUNT] = {
  { /* English */
   L"Off", L"Low", L"High", L"Auto", L"Backlight mode", L"Run at Windows startup",
   L"Force re-apply after sleep/hibernation", L"Self-test", L"Apply", L"Hide", L"Language:",
   L"Current: %ls", L"Error: %ls", L"Open settings", L"Exit", L"Backlight: %ls",
-  L"Lenovo Energy Management driver not found", L"no access to the driver (administrator rights required)",
+  L"Lenovo Energy Management (or, on ThinkPads, Power Management) driver not found", L"no access to the driver (administrator rights required)",
   L"the driver doesn't support backlight control", L"Failed to set backlight: %ls",
   L"Glim — driver check",
-  L"The Lenovo Energy Management driver (\\\\.\\EnergyDrv) was not found.\n\nInstall \"Lenovo Energy Management\" for your model from the Lenovo support site (for Chinese models: newsupport.lenovo.com.cn, \"Power management\" section), restart the PC and run Glim again.",
-  L"Access to the Lenovo Energy Management driver was denied.\n\nTry running Glim as administrator once and run the self-test.",
+  L"No Lenovo driver for the keyboard backlight was found: neither Lenovo Energy Management (\\\\.\\EnergyDrv: IdeaPad, Xiaoxin, ThinkBook) nor Lenovo Power Management (\\\\.\\IBMPmDrv: ThinkPad).\n\nInstall the one for your model from the Lenovo support site (for Chinese models: newsupport.lenovo.com.cn, \"Power management\" section), restart the PC and run Glim again.",
+  L"Access to the Lenovo driver was denied.\n\nTry running Glim as administrator once and run the self-test.",
   L"Glim — self-test",
-  L"[FAIL] Driver: %ls (code %lu)", L"[ OK ] EnergyDrv driver available, current mode: %ls",
+  L"[FAIL] Driver: %ls (code %lu)", L"[ OK ] Driver available, current mode: %ls",
   L"[FAIL] Setting \"%ls\" failed", L"[WARN] \"%ls\": set, but driver reported %d", L"[ OK ] \"%ls\": set and confirmed",
   L"[ OK ] Mode restored: %ls", L"[FAIL] Couldn't restore mode: %ls",
   L"[ OK ] Settings are saved in the registry", L"[FAIL] Settings can't be read from the registry",
@@ -146,7 +147,7 @@ static const wchar_t *STR[L_COUNT][S_COUNT] = {
   L"Result: %ls (errors %d, warnings %d)", L"everything works", L"PROBLEMS FOUND", L"Log: %ls\\log.txt",
   L"Keep manual changes (Fn+Space) until restart", L"Current: %ls (manual, until restart)", L"Restore saved mode (%ls)",
   L"About", L"About Glim",
-  L"Glim keeps your keyboard backlight mode on Lenovo laptops (Xiaoxin, IdeaPad, ThinkBook).\n\nMany models turn the backlight back on (Auto) after every boot or hibernation. Glim restores the mode you chose: Off, Low, High or Auto.",
+  L"Glim keeps your keyboard backlight mode on Lenovo laptops (Xiaoxin, IdeaPad, ThinkBook, ThinkPad).\n\nMany models reset the backlight (to Auto, or off) after every boot or hibernation, some also after sleep or when the screen turns off. Glim restores the mode you chose: Off, Low, High or Auto (where the keyboard has it).",
   L"Free and open source (MIT). Not affiliated with Lenovo.",
   L"Couldn't close the running copy of Glim.\n\nExit Glim from the tray menu and run this file again.",
   L"Glim is already running with different rights (as administrator or not).\n\nExit it from the tray menu and run this file again.",
@@ -156,18 +157,20 @@ static const wchar_t *STR[L_COUNT][S_COUNT] = {
   L"GitHub limits the number of requests, try again in an hour", L"the release has no Glim.exe yet",
   L"Autostart is off: the Glim.exe it started is gone (moved, deleted or removed by an antivirus). Turn it on again in the settings.",
   L"Autostart still starts an older Glim. Open the settings and click Apply to start this one instead.",
-  L"Autostart is not turned on: Glim.exe is in a folder for temporary files (%ls), and autostart would stop working when it is deleted. Exit Glim (tray menu \x2192 Exit), move Glim.exe to a permanent folder (for example C:\\Glim), start it from there, tick the box and click Apply." },
+  L"Autostart is not turned on: Glim.exe is in a folder for temporary files (%ls), and autostart would stop working when it is deleted. Exit Glim (tray menu \x2192 Exit), move Glim.exe to a permanent folder (for example C:\\Glim), start it from there, tick the box and click Apply.",
+  L"this keyboard doesn't have this mode", L"[INFO] Driver %ls: %ls", L"[INFO] \"%ls\": this keyboard doesn't have this mode",
+  L"the driver didn't accept the change", L"[FAIL] The driver accepts the modes, but the backlight doesn't change" },
  { /* Russian */
   L"Выключена", L"Слабая", L"Яркая", L"Авто", L"Режим подсветки", L"Запускать вместе с Windows",
   L"Принудительно применять после сна/гибернации", L"Самотест", L"Применить", L"Скрыть", L"Язык:",
   L"Сейчас: %ls", L"Ошибка: %ls", L"Открыть настройки", L"Выход", L"Подсветка: %ls",
-  L"драйвер Lenovo Energy Management не найден", L"нет доступа к драйверу (нужны права администратора)",
+  L"драйвер Lenovo Energy Management (или Power Management на ThinkPad) не найден", L"нет доступа к драйверу (нужны права администратора)",
   L"драйвер не поддерживает управление подсветкой", L"Не удалось установить подсветку: %ls",
   L"Glim — проверка драйвера",
-  L"Драйвер Lenovo Energy Management (\\\\.\\EnergyDrv) не найден.\n\nУстановите «Lenovo Energy Management» для вашей модели с сайта поддержки Lenovo (для китайских моделей: newsupport.lenovo.com.cn → 电源管理), перезагрузите ПК и снова запустите Glim.",
-  L"Нет доступа к драйверу Lenovo Energy Management.\n\nПопробуйте один раз запустить Glim от имени администратора и выполнить самотест.",
+  L"Не найден драйвер Lenovo для подсветки клавиатуры: ни Lenovo Energy Management (\\\\.\\EnergyDrv: IdeaPad, Xiaoxin, ThinkBook), ни Lenovo Power Management (\\\\.\\IBMPmDrv: ThinkPad).\n\nУстановите драйвер для вашей модели с сайта поддержки Lenovo (для китайских моделей: newsupport.lenovo.com.cn → 电源管理), перезагрузите ПК и снова запустите Glim.",
+  L"Нет доступа к драйверу Lenovo.\n\nПопробуйте один раз запустить Glim от имени администратора и выполнить самотест.",
   L"Glim — самотест",
-  L"[FAIL] Драйвер: %ls (код %lu)", L"[ OK ] Драйвер EnergyDrv доступен, текущий режим: %ls",
+  L"[FAIL] Драйвер: %ls (код %lu)", L"[ OK ] Драйвер доступен, текущий режим: %ls",
   L"[FAIL] Установка «%ls» не выполнена", L"[WARN] «%ls»: установлено, но драйвер вернул %d", L"[ OK ] «%ls»: установлено и подтверждено",
   L"[ OK ] Режим возвращён: %ls", L"[FAIL] Не удалось вернуть режим: %ls",
   L"[ OK ] Настройки сохраняются в реестре", L"[FAIL] Настройки не читаются из реестра",
@@ -175,7 +178,7 @@ static const wchar_t *STR[L_COUNT][S_COUNT] = {
   L"Итог: %ls (ошибок %d, предупреждений %d)", L"всё работает", L"ЕСТЬ ПРОБЛЕМЫ", L"Лог: %ls\\log.txt",
   L"Учитывать ручное переключение (Fn+Пробел) до перезагрузки", L"Сейчас: %ls (вручную, до перезагрузки)", L"Вернуть сохранённый режим (%ls)",
   L"О программе", L"О программе Glim",
-  L"Glim сохраняет выбранный режим подсветки клавиатуры на ноутбуках Lenovo (Xiaoxin, IdeaPad, ThinkBook).\n\nМногие модели снова включают подсветку (режим «Авто») после каждой загрузки или гибернации. Glim возвращает ваш режим: выключена, слабая, яркая или авто.",
+  L"Glim сохраняет выбранный режим подсветки клавиатуры на ноутбуках Lenovo (Xiaoxin, IdeaPad, ThinkBook, ThinkPad).\n\nМногие модели после каждой загрузки или гибернации включают «Авто» или выключают подсветку, некоторые — и после сна или выключения экрана. Glim возвращает ваш режим: выключена, слабая, яркая или авто (если такой режим есть у клавиатуры).",
   L"Бесплатная программа с открытым кодом (MIT). Не связана с Lenovo.",
   L"Не удалось закрыть уже запущенный Glim.\n\nВыйдите из Glim через меню в трее и запустите этот файл ещё раз.",
   L"Glim уже запущен с другими правами (от имени администратора или без них).\n\nВыйдите из него через меню в трее и запустите этот файл ещё раз.",
@@ -185,18 +188,20 @@ static const wchar_t *STR[L_COUNT][S_COUNT] = {
   L"GitHub ограничил число запросов, попробуйте через час", L"в релизе ещё нет Glim.exe",
   L"Автозапуск выключен: файл Glim.exe, который он запускал, пропал (перемещён или удалён, например антивирусом). Включите его снова в настройках.",
   L"Автозапуск всё ещё запускает старую версию Glim. Откройте настройки и нажмите «Применить», чтобы запускалась эта.",
-  L"Автозапуск не включён: Glim.exe лежит в папке для временных файлов (%ls), и когда его удалят, автозапуск перестанет работать. Выйдите из Glim (меню в трее \x2192 Выход), перенесите Glim.exe в постоянную папку (например, C:\\Glim), запустите оттуда, поставьте галочку и нажмите «Применить»." },
+  L"Автозапуск не включён: Glim.exe лежит в папке для временных файлов (%ls), и когда его удалят, автозапуск перестанет работать. Выйдите из Glim (меню в трее \x2192 Выход), перенесите Glim.exe в постоянную папку (например, C:\\Glim), запустите оттуда, поставьте галочку и нажмите «Применить».",
+  L"у этой клавиатуры нет такого режима", L"[INFO] Драйвер %ls: %ls", L"[INFO] «%ls»: у этой клавиатуры нет такого режима",
+  L"драйвер не принял изменение", L"[FAIL] Драйвер принимает режимы, но подсветка не меняется" },
  { /* Chinese */
   L"关闭", L"低亮", L"高亮", L"自动", L"键盘背光模式", L"开机时自动启动",
   L"睡眠/休眠后强制重新应用", L"自检", L"应用", L"隐藏", L"语言：",
   L"当前：%ls", L"错误：%ls", L"打开设置", L"退出", L"背光：%ls",
-  L"未找到联想电源管理驱动 (Lenovo Energy Management)", L"无权访问驱动（需要管理员权限）",
+  L"未找到联想电源管理驱动 (Lenovo Energy Management，ThinkPad 为 Lenovo Power Management)", L"无权访问驱动（需要管理员权限）",
   L"该驱动不支持键盘背光控制", L"无法设置背光：%ls",
   L"Glim — 驱动检查",
-  L"未找到联想电源管理驱动 (\\\\.\\EnergyDrv)。\n\n请在联想服务网站 newsupport.lenovo.com.cn 为您的机型安装“联想电源管理驱动 (Lenovo Energy Management)”，重启电脑后再运行 Glim。",
+  L"未找到联想键盘背光驱动：联想电源管理驱动 (\\\\.\\EnergyDrv，适用于小新、IdeaPad、ThinkBook) 和 ThinkPad 电源管理驱动 (\\\\.\\IBMPmDrv) 都不存在。\n\n请在联想服务网站 newsupport.lenovo.com.cn 为您的机型安装相应的驱动，重启电脑后再运行 Glim。",
   L"无权访问联想电源管理驱动。\n\n请尝试以管理员身份运行一次 Glim 并执行自检。",
   L"Glim — 自检",
-  L"[FAIL] 驱动：%ls（代码 %lu）", L"[ OK ] EnergyDrv 驱动可用，当前模式：%ls",
+  L"[FAIL] 驱动：%ls（代码 %lu）", L"[ OK ] 驱动可用，当前模式：%ls",
   L"[FAIL] 设置“%ls”失败", L"[WARN] “%ls”：已设置，但驱动返回 %d", L"[ OK ] “%ls”：已设置并确认",
   L"[ OK ] 已恢复模式：%ls", L"[FAIL] 无法恢复模式：%ls",
   L"[ OK ] 设置已保存到注册表", L"[FAIL] 无法从注册表读取设置",
@@ -204,7 +209,7 @@ static const wchar_t *STR[L_COUNT][S_COUNT] = {
   L"结果：%ls（错误 %d，警告 %d）", L"一切正常", L"发现问题", L"日志：%ls\\log.txt",
   L"保留手动切换（Fn+空格）直到重启", L"当前：%ls（手动，直到重启）", L"恢复已保存的模式（%ls）",
   L"关于", L"关于 Glim",
-  L"Glim 为联想笔记本（小新、IdeaPad、ThinkBook）保持您选择的键盘背光模式。\n\n许多机型在每次开机或休眠后都会重新打开背光（自动模式）。Glim 会恢复您选择的模式：关闭、低亮、高亮或自动。",
+  L"Glim 为联想笔记本（小新、IdeaPad、ThinkBook、ThinkPad）保持您选择的键盘背光模式。\n\n许多机型在每次开机或休眠后都会重置背光（变为自动或关闭），有些在睡眠或屏幕关闭后也会。Glim 会恢复您选择的模式：关闭、低亮、高亮或自动（如果键盘支持）。",
   L"免费开源软件 (MIT)。与联想无关。",
   L"无法关闭正在运行的 Glim。\n\n请从托盘菜单退出 Glim，然后再次运行此文件。",
   L"Glim 已经以不同的权限（管理员或非管理员）运行。\n\n请从托盘菜单退出它，然后再次运行此文件。",
@@ -214,7 +219,9 @@ static const wchar_t *STR[L_COUNT][S_COUNT] = {
   L"GitHub 限制了请求次数，请一小时后再试", L"该版本尚未包含 Glim.exe",
   L"开机启动已关闭：它启动的 Glim.exe 已不存在（被移动、删除或被杀毒软件删除）。请在设置中重新开启。",
   L"开机启动仍在启动旧版 Glim。请打开设置并点击“应用”，改为启动此版本。",
-  L"开机启动未开启：Glim.exe 位于临时文件夹（%ls），删除后开机启动将失效。请退出 Glim（托盘菜单 \x2192 退出），将 Glim.exe 移到固定的文件夹（例如 C:\\Glim），从那里启动，勾选后点击“应用”。" }
+  L"开机启动未开启：Glim.exe 位于临时文件夹（%ls），删除后开机启动将失效。请退出 Glim（托盘菜单 \x2192 退出），将 Glim.exe 移到固定的文件夹（例如 C:\\Glim），从那里启动，勾选后点击“应用”。",
+  L"此键盘没有该模式", L"[INFO] 驱动 %ls：%ls", L"[INFO] “%ls”：此键盘没有该模式",
+  L"驱动未接受此更改", L"[FAIL] 驱动接受了各模式，但背光没有变化" }
 };
 static const wchar_t *LANG_NAMES[L_COUNT] = { L"English", L"Русский", L"中文" };
 static const wchar_t *LOG_MODE[4] = { L"off", L"low", L"high", L"auto" };
@@ -285,47 +292,170 @@ static void klog(const wchar_t *fmt, ...) {
     }
 }
 
-/* ---------- driver ---------- */
-static int ioctl_call(HANDLE h, uint32_t func, uint32_t *out) {
-    unsigned char b[8] = {0}; DWORD len = 0;
-    if (!DeviceIoControl(h, IOCTL_BACKLIGHT, &func, sizeof func, b, 4, &len, NULL)) { g_lastErr = GetLastError(); return 0; }
-    *out = b[0] | (b[1] << 8) | (b[2] << 16) | ((uint32_t)b[3] << 24); return 1;
-}
-/* test hook: GLIM_FAKE=<file> emulates the driver with a file holding the level digit */
-static wchar_t g_fake[MAX_PATH];
-static int fake_backlight(int set_level) {
-    if (set_level >= 0 && set_level <= 3) {
-        /* no file = no driver, for writes too */
-        HANDLE f = CreateFileW(g_fake, GENERIC_WRITE, FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, TRUNCATE_EXISTING, 0, NULL);
-        if (f == INVALID_HANDLE_VALUE) return -1;
-        char c = (char)('0' + set_level); DWORD w; WriteFile(f, &c, 1, &w, NULL); CloseHandle(f); return set_level;
-    }
+/* ---------- driver ----------
+   Two Lenovo drivers answer without admin rights; both use 4-byte input and output buffers.
+   - \\.\EnergyDrv (IdeaPad, Xiaoxin, ThinkBook; found by gonwan.com): IOCTL 0x83102144, the input is a function.
+     0x01 capability: bit 0 = valid, >> 1 = the highest mode (3: with Auto). 0x32 status: bit 0 = valid, >> 1 =
+     the mode in the low bits, and 0x8000 there on models with Auto (without it the keyboard is off or has no
+     backlight); older models without Auto (ThinkBook 14 G2) don't set 0x8000.
+     Set: 0x00033 / 0x10033 / 0x20033 / 0x30033 = Off / Low / High / Auto.
+   - \\.\IBMPmDrv (ThinkPad; Lenovo Vantage's keyboard add-in, "multiple light control"): 0x222680 get (input 0):
+     bit 31 = error, bits 16 and 18 = supported, bits 8-11 = the highest mode, bits 0-3 = the mode. 0x222684 set:
+     the input keeps the current value's flag bits as Lenovo builds it - ((cur >> 13) & 0x100) | (cur & 0xF0) | mode.
+     No Auto. */
+#define DRV_ENERGY 1
+#define DRV_PM     2
+#define IOCTL_PM_GET 0x222680
+#define IOCTL_PM_SET 0x222684
+static const wchar_t *const DRV_DEV[3]  = { L"", L"\\\\.\\EnergyDrv", L"\\\\.\\IBMPmDrv" };
+static const wchar_t *const DRV_NAME[3] = { L"", L"EnergyDrv", L"IBMPmDrv (ThinkPad)" };
+static int g_drv = 0;       /* the driver that answered last (0: none yet) */
+static int g_maxLevel = 3;  /* the highest mode this keyboard has: 3 = up to Auto, 2 = up to High, 1 = Off/Low */
+static wchar_t g_raw[64]; static int g_rawDrv;  /* the last raw answer and its driver, for the log and the self-test */
+
+/* test hook: GLIM_FAKE=<file> emulates a driver with a file holding the level digit (no file = no driver);
+   GLIM_FAKE_DRV picks it: energy (default), energy-old (no 0x8000, no Auto), energy-nocap (no capability answer,
+   no 0x8000), energy-nobit (Auto but no 0x8000: no backlight), energy-dead (sets change nothing), pm (ThinkPad),
+   pm1 (Off/Low only), pm0 (no backlight), pm-fail (refuses every set), pm-flags (more flag bits), pm-err (error
+   bit), pm-half (one of the two "supported" bits), both (EnergyDrv without backlight + IBMPmDrv) */
+static wchar_t g_fake[MAX_PATH], g_fakeDrv[16];
+#define FAKE_HANDLE(d) ((HANDLE)(INT_PTR)(0x7100 + (d)))
+static int fake_is(const wchar_t *v) { return !wcscmp(g_fakeDrv, v); }
+static int fake_has(int drv) { return fake_is(L"both") || (drv == DRV_PM) == !wcsncmp(g_fakeDrv, L"pm", 2); }
+static int fake_read(void) {
     HANDLE f = CreateFileW(g_fake, GENERIC_READ, FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING, 0, NULL);
     if (f == INVALID_HANDLE_VALUE) return -1;
     char c = 0; DWORD rd = 0; ReadFile(f, &c, 1, &rd, NULL); CloseHandle(f);
-    return (rd == 1 && c >= '0' && c <= '3') ? c - '0' : -2;
+    return (rd == 1 && c >= '0' && c <= '9') ? c - '0' : 15;
 }
-/* returns: 0..3 current level; -1 driver missing; -3 access denied; -2 not supported/error */
-static int backlight(int set_level) {
-    if (g_fake[0]) return fake_backlight(set_level);
-    HANDLE h = CreateFileW(L"\\\\.\\EnergyDrv", GENERIC_READ, FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
-    if (h == INVALID_HANDLE_VALUE) { g_lastErr = GetLastError(); return g_lastErr == ERROR_ACCESS_DENIED ? -3 : -1; }
-    int res = -2; uint32_t cap = 0, st = 0, d = 0;
-    g_lastErr = ERROR_NOT_SUPPORTED;  /* unless a call fails: the driver answers, but not as expected */
-    if (ioctl_call(h, 0x01, &cap) && (cap & 1) && (cap >> 1) == 3 && ioctl_call(h, 0x32, &st) && (st & 1)) {
-        st >>= 1;
-        if (st & 0x8000) {
-            res = (int)(st & 0x7fff);
-            if (res > 3) res = -2;  /* a level Glim doesn't know */
-            if (set_level >= 0 && set_level <= 3) {
-                static const uint32_t f[4] = { 0x00033, 0x10033, 0x20033, 0x30033 };
-                res = ioctl_call(h, f[set_level], &d) ? set_level : -2;
-            }
+static int fake_write(int level) {
+    HANDLE f = CreateFileW(g_fake, GENERIC_WRITE, FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, TRUNCATE_EXISTING, 0, NULL);
+    if (f == INVALID_HANDLE_VALUE) return 0;
+    char c = (char)('0' + level); DWORD w; WriteFile(f, &c, 1, &w, NULL); CloseHandle(f); return 1;
+}
+static int fake_ioctl(HANDLE h, DWORD code, DWORD in, DWORD *out) {
+    int lv = fake_read(), old = fake_is(L"energy-old") || fake_is(L"energy-nocap"), noauto = old || fake_is(L"energy-dead");
+    *out = 0;
+    if (lv < 0) { SetLastError(ERROR_DEVICE_NOT_CONNECTED); return 0; }
+    if (h == FAKE_HANDLE(DRV_ENERGY) && code == IOCTL_BACKLIGHT) {
+        static const DWORD f[4] = { 0x00033, 0x10033, 0x20033, 0x30033 };
+        if (in == 0x01) {
+            if (fake_is(L"energy-nocap")) { SetLastError(ERROR_INVALID_FUNCTION); return 0; }
+            *out = fake_is(L"both") ? 1 : noauto ? (2 << 1) | 1 : (3 << 1) | 1; return 1;
+        }
+        if (in == 0x32) { *out = ((old || fake_is(L"energy-nobit") ? 0 : 0x8000) | (DWORD)lv) << 1 | 1; return 1; }
+        for (int i = 0; i <= (noauto ? 2 : 3); i++) if (in == f[i]) return fake_is(L"energy-dead") ? 1 : fake_write(i);
+    } else if (h == FAKE_HANDLE(DRV_PM)) {
+        DWORD maxl = fake_is(L"pm1") ? 1 : 2, flags = 0x50000 | maxl << 8;
+        if (fake_is(L"pm0")) flags = 0;
+        if (fake_is(L"pm-flags")) flags = 0x250230;   /* bit 21 and bits 4-7 set: a set must carry 0x130 */
+        if (fake_is(L"pm-err")) flags |= 0x80000000;
+        if (fake_is(L"pm-half")) flags = 0x10000 | maxl << 8;
+        DWORD keep = ((flags >> 13) & 0x100) | (flags & 0xF0);  /* what Lenovo's composition carries over */
+        if (code == IOCTL_PM_GET && in == 0) { *out = flags ? flags | (DWORD)lv : 0; return 1; }
+        if (code == IOCTL_PM_SET) {
+            if ((in & ~0xFu) != keep || (in & 0xF) > maxl || (flags & 0x50000) != 0x50000 || fake_is(L"pm-fail")) { *out = 0x80000000; return 1; }
+            return fake_write((int)(in & 0xF));
         }
     }
-    CloseHandle(h); return res;
+    SetLastError(ERROR_INVALID_FUNCTION); return 0;
 }
-static const wchar_t *err_text(int r) { return r == -1 ? T(S_E_MISSING) : r == -3 ? T(S_E_DENIED) : T(S_E_UNSUP); }
+
+static HANDLE dev_open(int drv) {
+    if (g_fake[0]) {
+        if (!fake_has(drv) || GetFileAttributesW(g_fake) == INVALID_FILE_ATTRIBUTES) {
+            SetLastError(ERROR_FILE_NOT_FOUND); return INVALID_HANDLE_VALUE;
+        }
+        return FAKE_HANDLE(drv);
+    }
+    return CreateFileW(DRV_DEV[drv], GENERIC_READ, FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+}
+static void dev_close(HANDLE h) { if (!g_fake[0]) CloseHandle(h); }
+static int dev_ioctl(HANDLE h, DWORD code, DWORD in, DWORD *out) {  /* 1 = answered (*out); 0 = failed (g_lastErr) */
+    unsigned char b[8] = {0}; DWORD len = 0;
+    if (g_fake[0]) { if (fake_ioctl(h, code, in, out)) return 1; g_lastErr = GetLastError(); return 0; }
+    if (!DeviceIoControl(h, code, &in, sizeof in, b, 4, &len, NULL)) { g_lastErr = GetLastError(); return 0; }
+    *out = b[0] | (b[1] << 8) | (b[2] << 16) | ((DWORD)b[3] << 24); return 1;
+}
+
+/* an answer Glim doesn't understand: logged once per value */
+static int unknown_answer(int drv) {
+    static wchar_t logged[3][64];
+    if (wcscmp(logged[drv], g_raw) != 0) { wcscpy(logged[drv], g_raw); klog(L"driver: %ls answered %ls - not a known backlight status", DRV_NAME[drv], g_raw); }
+    g_lastErr = ERROR_NOT_SUPPORTED; return -2;
+}
+/* the backends: 0..3 = the mode now (or the one just set), -2 = no backlight / unknown answer, -4 = the
+   keyboard doesn't have the mode asked for, -5 = the driver didn't take the change; *maxl = its highest mode */
+static int energy_backlight(HANDLE h, int set_level, int *maxl) {
+    DWORD cap = 0, st = 0, d = 0, capErr, stErr;
+    int capOk = dev_ioctl(h, IOCTL_BACKLIGHT, 0x01, &cap); capErr = g_lastErr;
+    int stOk = dev_ioctl(h, IOCTL_BACKLIGHT, 0x32, &st); stErr = g_lastErr;
+    wchar_t c[32], t[32];  /* both answers (or errors) for the log and the self-test */
+    if (capOk) swprintf(c, 32, L"capability 0x%08lX", cap); else swprintf(c, 32, L"capability failed (%lu)", capErr);
+    if (stOk) swprintf(t, 32, L"status 0x%08lX", st); else swprintf(t, 32, L"status failed (%lu)", stErr);
+    swprintf(g_raw, 64, L"%ls, %ls", c, t); g_rawDrv = DRV_ENERGY;
+    if (!stOk) { g_lastErr = stErr; return -2; }
+    int lv = (int)((st >> 1) & 0x7fff), top = capOk && (cap & 1) && (cap >> 1) <= 3 ? (int)(cap >> 1) : -1;  /* -1: not known */
+    if (!(st & 1) || lv > 3 || top == 0) return unknown_answer(DRV_ENERGY);
+    if (top == 3 && !(st & 0x10000)) return unknown_answer(DRV_ENERGY);  /* models with Auto set 0x8000; without it: no backlight */
+    if (top < 0) top = lv == 3 ? 3 : 2;  /* no capability answer (older models): no Auto unless it shows Auto */
+    if (lv > top) top = lv;  /* it shows the mode: it has it */
+    *maxl = top;
+    if (set_level < 0) return lv;
+    if (set_level > top) return -4;
+    static const DWORD f[4] = { 0x00033, 0x10033, 0x20033, 0x30033 };
+    return dev_ioctl(h, IOCTL_BACKLIGHT, f[set_level], &d) ? set_level : -5;
+}
+static int pm_backlight(HANDLE h, int set_level, int *maxl) {
+    DWORD st = 0, d = 0;
+    if (!dev_ioctl(h, IOCTL_PM_GET, 0, &st)) return -2;
+    swprintf(g_raw, 64, L"status 0x%08lX", st); g_rawDrv = DRV_PM;
+    int lv = (int)(st & 0xF), top = (int)((st >> 8) & 0xF);
+    if ((st & 0x80000000) || (st & 0x50000) != 0x50000 || top < 1) return unknown_answer(DRV_PM);
+    if (top > 2) top = 2;  /* this driver has no Auto */
+    if (lv > top) return unknown_answer(DRV_PM);
+    *maxl = top;
+    if (set_level < 0) return lv;
+    if (set_level > top) return -4;
+    DWORD v = ((st >> 13) & 0x100) | (st & 0xF0) | (DWORD)set_level;
+    if (!dev_ioctl(h, IOCTL_PM_SET, v, &d)) return -5;
+    if (d & 0x80000000) { g_lastErr = ERROR_GEN_FAILURE; return -5; }  /* the driver refused it */
+    return set_level;
+}
+/* returns: 0..3 the mode now (or the one just set); -1 no driver; -3 access denied; -2 no backlight control or an
+   unknown answer; -4 this keyboard doesn't have the mode asked for; -5 the driver didn't take the change.
+   set_level < 0 only reads. The driver that answered last is tried first, and once one has worked, a failed call
+   doesn't switch to the other. */
+static int backlight(int set_level) {
+    int res = -1; DWORD err = ERROR_FILE_NOT_FOUND;
+    g_raw[0] = 0;
+    for (int i = 0; i < 2; i++) {
+        int d = (g_drv == DRV_PM) == (i == 0) ? DRV_PM : DRV_ENERGY, maxl = 3;
+        HANDLE h = dev_open(d);
+        if (h == INVALID_HANDLE_VALUE) {
+            DWORD e = GetLastError();
+            if (e == ERROR_ACCESS_DENIED) { res = -3; err = e; }  /* the one the user can do something about */
+            else if (res == -1 && e != ERROR_FILE_NOT_FOUND && e != ERROR_PATH_NOT_FOUND) err = e;
+            continue;
+        }
+        g_lastErr = 0;
+        int r = d == DRV_ENERGY ? energy_backlight(h, set_level, &maxl) : pm_backlight(h, set_level, &maxl);
+        dev_close(h);
+        if (r >= 0 || r <= -4) {  /* it's the driver of this keyboard */
+            if (g_drv != d || g_maxLevel != maxl)
+                klog(L"driver: %ls, %ls, modes off..%ls", DRV_NAME[d], g_raw, LOG_MODE[maxl]);
+            g_drv = d; g_maxLevel = maxl;
+            if (r == -4) g_lastErr = ERROR_NOT_SUPPORTED;
+            return r;
+        }
+        if (res != -3) { res = -2; err = g_lastErr; }  /* it's there, but no backlight: say that rather than "missing" */
+        if (d == g_drv) break;
+    }
+    g_lastErr = err; return res;
+}
+static const wchar_t *err_text(int r) {
+    return r == -1 ? T(S_E_MISSING) : r == -3 ? T(S_E_DENIED) : r == -4 ? T(S_E_NOMODE) : r == -5 ? T(S_E_REFUSED) : T(S_E_UNSUP);
+}
 
 /* ---------- settings ---------- */
 static int reg_dword(HKEY k, const wchar_t *name, DWORD *v) {
@@ -727,6 +857,7 @@ static LRESULT CALLBACK group_proc(HWND h, UINT msg, WPARAM wp, LPARAM lp, UINT_
     return 0;
 }
 static void mark_changes(void);
+static void enable_modes(void);
 static int g_shownLevel = -1;  /* the level the status line shows (< 0: an error) */
 static void show_status(int cur) {
     wchar_t s[200];
@@ -739,8 +870,15 @@ static void show_status(int cur) {
         if (IsWindowVisible(g_wnd)) mark_changes();  /* a manual (Fn+Space) mode makes Apply useful */
     }
     tray_tip(cur);
+    enable_modes();
 }
 static void update_status(void) { show_status(backlight(-1)); }
+static void enable_modes(void) {  /* modes this keyboard doesn't have are greyed out (no Auto on a ThinkPad) */
+    for (int i = 0; g_wnd && i < 4; i++) {
+        HWND c = GetDlgItem(g_wnd, ID_R0 + i);
+        if (c && !IsWindowEnabled(c) != (i > g_maxLevel)) EnableWindow(c, i <= g_maxLevel);
+    }
+}
 static void balloon_icon(const wchar_t *text, DWORD icon) {
     klog(L"balloon: %ls", text);
     g_nid.uFlags = NIF_INFO; g_nid.dwInfoFlags = icon;
@@ -775,7 +913,7 @@ static void mark_changes(void) {
         if (c && (HFONT)SendMessageW(c, WM_GETFONT, 0, 0) != f) SendMessageW(c, WM_SETFONT, (WPARAM)f, TRUE);
         dirty |= changed[i];
     }
-    int on = dirty || (g_shownLevel >= 0 && g_shownLevel != (int)g_mode);  /* the light isn't the saved mode: Fn+Space */
+    int on = dirty || (g_shownLevel >= 0 && g_shownLevel != (int)g_mode && (int)g_mode <= g_maxLevel);  /* the light isn't the saved mode: Fn+Space */
     if (!on && GetFocus() == apply) SetFocus(GetDlgItem(g_wnd, ID_R0 + mode));  /* a disabled button can't keep the focus */
     EnableWindow(apply, on);
 }
@@ -848,7 +986,7 @@ static void tray_menu(void) {
     HMENU m = CreatePopupMenu();
     AppendMenuW(m, MF_STRING, ID_TRAY_OPEN, T(S_OPEN));
     AppendMenuW(m, MF_SEPARATOR, 0, NULL);
-    for (int i = 0; i < 4; i++) AppendMenuW(m, MF_STRING | (eff_mode() == i ? MF_CHECKED : 0), ID_TRAY_OFF + i, STR[g_lang][S_MODE0 + i]);
+    for (int i = 0; i < 4; i++) AppendMenuW(m, MF_STRING | (eff_mode() == i ? MF_CHECKED : 0) | (i > g_maxLevel ? MF_GRAYED : 0), ID_TRAY_OFF + i, STR[g_lang][S_MODE0 + i]);
     if (g_respect && g_override >= 0) {
         wchar_t t[160]; swprintf(t, 160, T(S_RESTORE), STR[g_lang][S_MODE0 + g_mode]);
         AppendMenuW(m, MF_SEPARATOR, 0, NULL); AppendMenuW(m, MF_STRING, ID_TRAY_RESTORE, t);
@@ -867,7 +1005,7 @@ static void tray_menu(void) {
 /* ---------- driver check on manual launch ---------- */
 static void check_driver_dialog(void) {
     int r = backlight(-1);
-    if (r == -1) { klog(L"driver check: EnergyDrv missing (err=%lu)", g_lastErr); MessageBoxW(g_wnd, T(S_DRV_MISSING), T(S_DRV_TITLE), MB_OK | MB_ICONWARNING); }
+    if (r == -1) { klog(L"driver check: no Lenovo driver (err=%lu)", g_lastErr); MessageBoxW(g_wnd, T(S_DRV_MISSING), T(S_DRV_TITLE), MB_OK | MB_ICONWARNING); }
     else if (r == -3) { klog(L"driver check: access denied"); MessageBoxW(g_wnd, T(S_DRV_DENIED), T(S_DRV_TITLE), MB_OK | MB_ICONWARNING); }
     else if (r < 0) klog(L"driver check: unsupported (err=%lu)", g_lastErr);
     else klog(L"driver check: OK, current %ls", LOG_MODE[r]);
@@ -877,18 +1015,25 @@ static void check_driver_dialog(void) {
 static int self_test(void) {  /* returns the number of failures */
     static wchar_t rep[6144]; wchar_t line[400]; int fails = 0, warns = 0; rep[0] = 0;
 #define ADD(...) do { swprintf(line, 400, __VA_ARGS__); wcscat(rep, line); wcscat(rep, L"\r\n"); } while (0)
-    int cur = backlight(-1);
-    if (cur < 0 || cur > 3) { ADD(T(S_T_DRVFAIL), err_text(cur), g_lastErr); fails++; }
-    else {
-        ADD(T(S_T_DRVOK), STR[g_lang][S_MODE0 + cur]);
+    int cur = backlight(-1), ok = cur >= 0 && cur <= 3;
+    if (ok) ADD(T(S_T_DRVOK), STR[g_lang][S_MODE0 + cur]); else { ADD(T(S_T_DRVFAIL), err_text(cur), g_lastErr); fails++; }
+    if (g_raw[0]) ADD(T(S_T_RAW), DRV_NAME[g_rawDrv], g_raw);  /* for reports of new models */
+    if (ok) {
+        int tried = 0, changed = 0;  /* modes other than the one it was in */
         for (int lv = 0; lv <= 3; lv++) {
+            if (lv > g_maxLevel) { ADD(T(S_T_NOMODE), STR[g_lang][S_MODE0 + lv]); continue; }
             int r = backlight(lv); Sleep(250); int rb = backlight(-1);
+            if (lv != cur) { tried++; changed += r == lv && rb == lv; }
             if (r != lv) { ADD(T(S_T_SETFAIL), STR[g_lang][S_MODE0 + lv]); fails++; }
             else if (rb != lv) { ADD(T(S_T_SETWARN), STR[g_lang][S_MODE0 + lv], rb); warns++; }
             else ADD(T(S_T_SETOK), STR[g_lang][S_MODE0 + lv]);
         }
-        int m = eff_mode(), r = backlight(m); if (r >= 0) g_lastSet = g_lastSeen = r;
-        if (r == m) ADD(T(S_T_RESTOK), STR[g_lang][S_MODE0 + m]); else { ADD(T(S_T_RESTFAIL), STR[g_lang][S_MODE0 + m]); fails++; }
+        if (tried && !changed) { ADD(L"%ls", T(S_T_NOEFFECT)); fails++; }
+        int m = eff_mode(), back = m <= g_maxLevel ? m : cur;  /* a saved mode it doesn't have (said above): the one before the test */
+        int r = backlight(back);
+        if (r == back) ADD(T(S_T_RESTOK), STR[g_lang][S_MODE0 + back]); else { ADD(T(S_T_RESTFAIL), STR[g_lang][S_MODE0 + back]); fails++; }
+        if (back != m) warns++;
+        r = backlight(-1); if (r >= 0 && r <= 3) g_lastSet = g_lastSeen = r;  /* whatever it is now isn't a Fn+Space */
     }
     DWORD keep = g_mode; save_settings(); g_mode = 99; load_settings();
     if (g_mode == keep) ADD(L"%ls", T(S_T_REGOK)); else { ADD(L"%ls", T(S_T_REGFAIL)); fails++; g_mode = keep; }
@@ -1209,6 +1354,11 @@ static LRESULT test_state(WPARAM what) {  /* WM_GLIM_TEST_STATE */
         for (int i = 0; i < 7; i++) if ((HFONT)SendDlgItemMessageW(g_wnd, ids[i], WM_GETFONT, 0, 0) == g_fontBold) r |= 1 << i;
         return r;
     }
+    if (what == 6) {  /* the driver, its highest mode and the mode radios enabled */
+        int r = g_drv * 100 + g_maxLevel * 10, n = 0;
+        for (int i = 0; i < 4; i++) n += IsWindowEnabled(GetDlgItem(g_wnd, ID_R0 + i)) != 0;
+        return r + n;
+    }
     return what == 1 ? g_dark : what == 2 ? g_dpi : what == 3 ? g_customDraws : 0;
 }
 static LRESULT CALLBACK WndProc(HWND h, UINT msg, WPARAM wp, LPARAM lp) {
@@ -1250,7 +1400,8 @@ static LRESULT CALLBACK WndProc(HWND h, UINT msg, WPARAM wp, LPARAM lp) {
     case WM_COMMAND:
         switch (LOWORD(wp)) {
         case ID_APPLY:
-            for (int i = 0; i < 4; i++) if (IsDlgButtonChecked(h, ID_R0 + i) == BST_CHECKED) g_mode = (DWORD)i;
+            for (int i = 0; i < 4; i++)
+                if (IsDlgButtonChecked(h, ID_R0 + i) == BST_CHECKED && IsWindowEnabled(GetDlgItem(h, ID_R0 + i))) g_mode = (DWORD)i;
             g_onwake = IsDlgButtonChecked(h, ID_ONWAKE) == BST_CHECKED;
             g_respect = IsDlgButtonChecked(h, ID_RESPECT) == BST_CHECKED;
             g_override = -1;
@@ -1275,6 +1426,7 @@ static LRESULT CALLBACK WndProc(HWND h, UINT msg, WPARAM wp, LPARAM lp) {
         case ID_UPDATE: case ID_TRAY_UPDATE: upd_start_check(); return 0;
         case ID_TRAY_OPEN: show_window(); return 0;
         case ID_TRAY_OFF: case ID_TRAY_LOW: case ID_TRAY_HIGH: case ID_TRAY_AUTO:
+            if (LOWORD(wp) - ID_TRAY_OFF > g_maxLevel) { klog(L"tray: %ls isn't available on this keyboard", LOG_MODE[LOWORD(wp) - ID_TRAY_OFF]); return 0; }
             g_mode = (DWORD)(LOWORD(wp) - ID_TRAY_OFF); g_override = -1; save_settings(); g_failNotified = g_startRetrying = 0; apply_saved(L"tray"); update_status();
             if (IsWindowVisible(h)) { CheckRadioButton(h, ID_R0, ID_R3, ID_R0 + (int)g_mode); mark_changes(); }  /* check box edits stay */
             return 0;
@@ -1315,8 +1467,9 @@ static LRESULT CALLBACK WndProc(HWND h, UINT msg, WPARAM wp, LPARAM lp) {
             if (cur < 0 || cur > 3) { if (g_trayLevel >= 0) show_status(cur); return 0; }  /* the driver stopped answering: say so */
             int exp = eff_mode();
             if (GetTickCount64() < g_graceUntil) {
-                /* system window (after login / wake): revert any change made by firmware or Lenovo apps */
-                if (cur != exp) {
+                /* system window (after login / wake): revert any change made by firmware or Lenovo apps
+                   (not to a saved mode this keyboard doesn't have: the failure balloon asked to pick another) */
+                if (cur != exp && exp <= g_maxLevel) {
                     int r = backlight(exp);
                     klog(L"system changed backlight to %ls, restored %ls%ls", LOG_MODE[cur], LOG_MODE[exp], r == exp ? L"" : L" - FAILED");
                     if (r == exp) cur = exp;
@@ -1324,7 +1477,7 @@ static LRESULT CALLBACK WndProc(HWND h, UINT msg, WPARAM wp, LPARAM lp) {
                         g_graceRetries++; start_grace(ms(4000));  /* don't let the window end on a failed revert */
                     }
                 }
-                if (cur == exp) g_lastSet = exp;
+                if (cur == exp || exp > g_maxLevel) g_lastSet = cur;
                 g_lastSeen = cur;
                 show_status(cur);
                 return 0;
@@ -1337,6 +1490,12 @@ static LRESULT CALLBACK WndProc(HWND h, UINT msg, WPARAM wp, LPARAM lp) {
                 return 0;
             }
             if (cur == g_lastSeen) { if (cur != g_trayLevel) show_status(cur); return 0; }  /* e.g. the driver answers again */
+            if (g_display == 0) {  /* screen off: the firmware, not Fn+Space (a key turns the screen on first) - the
+                                      screen-on window restores the mode */
+                klog(L"screen off: backlight changed to %ls - not taken for a manual change", LOG_MODE[cur]);
+                g_lastSeen = cur; show_status(cur);
+                return 0;
+            }
             g_lastSeen = cur;
             if (cur != g_lastSet && g_respect) {
                 g_override = (cur == (int)g_mode) ? -1 : cur;
@@ -1441,6 +1600,7 @@ int WINAPI wWinMain(HINSTANCE inst, HINSTANCE prev, PWSTR cmd, int show) {
     g_quiet = cmd && wcsstr(cmd, L"/quiet") != NULL;
     { wchar_t ev[32]; if (GetEnvironmentVariableW(L"GLIM_TIMESCALE", ev, 32)) { g_scale = _wtoi(ev); if (g_scale < 1) g_scale = 1; } }
     GetEnvironmentVariableW(L"GLIM_FAKE", g_fake, MAX_PATH);
+    GetEnvironmentVariableW(L"GLIM_FAKE_DRV", g_fakeDrv, 16);
 #ifdef GLIM_TEST_BUILD
     { wchar_t ev[8]; g_updTest = g_fake[0] && GetEnvironmentVariableW(L"GLIM_UPDATE_AUTO", ev, 8); }
 #endif

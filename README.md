@@ -7,10 +7,10 @@
 
 ---
 
-On some Lenovo laptops (Xiaoxin, IdeaPad, ThinkBook) the keyboard backlight turns itself back on in **Auto** mode after every cold boot or hibernation, and Lenovo's own apps can't keep your choice. **Glim** remembers the mode you want and quietly restores it.
+On many Lenovo laptops the keyboard backlight doesn't stay the way you set it: Xiaoxin, IdeaPad and ThinkBook models turn it back on (often in **Auto** mode) after every cold boot or hibernation, and many ThinkPads switch it off after sleep or when the screen turns off. Lenovo's own apps can't keep your choice. **Glim** remembers the mode you want and quietly restores it.
 
 ## Features
-- Backlight modes: **Off / Low / High / Auto**
+- Backlight modes: **Off / Low / High / Auto** (Auto where the keyboard has it)
 - Restores your mode after **sleep and hibernation**, and at sign-in with **Run at Windows startup**
 - **Keeps a mode you set with Fn+Space** until restart (optional)
 - Per-user autostart, no admin rights
@@ -23,9 +23,11 @@ On some Lenovo laptops (Xiaoxin, IdeaPad, ThinkBook) the keyboard backlight turn
 
 ## Requirements
 - Windows 10 / 11 x64
-- **Lenovo Energy Management** driver (preinstalled on most Lenovo consumer laptops; otherwise download it for your model from Lenovo support)
+- A Lenovo driver that is preinstalled on most models (otherwise download it for your model from Lenovo support):
+  - Xiaoxin, IdeaPad, ThinkBook: **Lenovo Energy Management**
+  - ThinkPad: **Lenovo Power Management** driver
 
-Tested on Lenovo Xiaoxin Air 15 (2026) and ThinkBook 14+ with Windows 11. Click **Self-test** to check your model.
+Tested on Lenovo Xiaoxin Air 15 (2026) and ThinkBook 14+ with Windows 11. ThinkPad support is new: if you have a ThinkPad, please tell us how it works for you (see Notes). Click **Self-test** to check your model.
 
 ## Download
 Get `Glim.exe` from the [latest release](../../releases/latest). The release notes list its SHA256.
@@ -67,7 +69,7 @@ Glim is a windowed program, so to see the exit code in a command prompt start it
 Untick **Run at Windows startup** → **Apply**, choose **Exit** in the tray menu, then delete `Glim.exe`, `%LOCALAPPDATA%\Glim` and `HKCU\Software\Glim`.
 
 ## How it works
-Glim talks to the Lenovo Energy Management driver (`\\.\EnergyDrv`) via `DeviceIoControl`, the same interface Lenovo's own software uses. It sets your mode at sign-in, watches for the firmware resetting it after sleep or hibernation and restores it, and treats a change made with Fn+Space as your choice.
+Glim talks to the Lenovo Energy Management driver (`\\.\EnergyDrv`) or, on ThinkPads, the Lenovo Power Management driver (`\\.\IBMPmDrv`) via `DeviceIoControl`, the same interfaces Lenovo's own software uses. It sets your mode at sign-in, watches for the firmware resetting it after sleep or hibernation and restores it, and treats a change made with Fn+Space as your choice.
 
 ## Build
 Requires MinGW-w64 (Linux or MSYS2):
@@ -81,7 +83,7 @@ Every push is also built by [GitHub Actions](.github/workflows/build.yml).
 - For 90 seconds after sign-in and 15 seconds after waking up or the screen turning back on, Glim undoes any change of the backlight, including Fn+Space: that is how it catches the firmware's reset. Press Fn+Space again a bit later.
 - An antivirus may flag a new, unsigned release until it builds up reputation. That is a false positive: you can check the file on [VirusTotal](https://www.virustotal.com) by its SHA256 and report it to your antivirus vendor.
 - Based on research by [gonwan.com](https://www.gonwan.com/2025/04/11/keyboard-backlight-control-on-lenovo-ideapad-xiaoxin-models/).
-- Something doesn't work on your model? Open an [issue](../../issues) and attach `selftest.txt` from `%LOCALAPPDATA%\Glim`.
+- Something doesn't work on your model, or it works on a model not listed above? Open an [issue](../../issues) with your model and `selftest.txt` from `%LOCALAPPDATA%\Glim` (it shows what the driver answers).
 - Not affiliated with Lenovo. Use at your own risk.
 
 ## Privacy
