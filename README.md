@@ -35,7 +35,7 @@ Click **Self-test** to check your model.
 | Lenovo XiaoXin Air 15 IWC11 (83UF), Windows 11 | Energy Management | yes |
 | Lenovo ThinkBook 14 G7+ IAH (21TK), Windows 11 | Energy Management | yes |
 
-ThinkPad support is new and not confirmed yet. Your laptop isn't listed, or Glim doesn't work on it? Please [report it](#report-your-laptop): that's how new models get added.
+Your laptop isn't listed, or Glim doesn't work on it? Please [report it](#report-your-laptop): that's how new models get added.
 
 ## Download
 Get `Glim.exe` from the [latest release](../../releases/latest). The release notes list its SHA256.
