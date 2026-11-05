@@ -1,0 +1,57 @@
+# Builds Glim.exe from the sources on a GitHub-hosted runner and keeps it as an artifact.
+name: Build
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Install MinGW-w64
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends gcc-mingw-w64-x86-64-win32 binutils-mingw-w64-x86-64
+
+      - name: Build
+        working-directory: src
+        run: |
+          unset CFLAGS
+          sh build.sh
+
+      - name: Check
+        working-directory: src
+        run: |
+          # version.h: the string matches the numbers (X.Y, or X.Y.Z when the patch isn't 0); a tag must match it
+          num() { sed -n "s/^#define GLIM_VER_$1 *\([0-9][0-9]*\)\$/\1/p" version.h; }
+          ver=$(sed -n 's/^#define GLIM_VER_STR *"\(.*\)"/\1/p' version.h)
+          want="$(num MAJOR).$(num MINOR)"; [ "$(num PATCH)" = 0 ] || want="$want.$(num PATCH)"
+          echo "version $ver"
+          if [ -z "$ver" ] || [ "$ver" != "$want" ]; then
+            echo "version.h: GLIM_VER_STR \"$ver\" doesn't match the numbers ($want)"; exit 1
+          fi
+          if [ "${GITHUB_REF_TYPE}" = tag ] && [ "${GITHUB_REF_NAME}" != "v$ver" ]; then
+            echo "tag ${GITHUB_REF_NAME} doesn't match version.h ($ver)"; exit 1
+          fi
+          # static imports: system DLLs that are always loaded from System32 (the rest is loaded at run time)
+          x86_64-w64-mingw32-objdump -p Glim.exe | grep "DLL Name"
+          if x86_64-w64-mingw32-objdump -p Glim.exe | grep "DLL Name" | grep -viqE "advapi32|comctl32|gdi32|kernel32|msvcrt|ole32|shell32|user32"; then
+            echo "unexpected import"; exit 1
+          fi
+          sha256sum Glim.exe
+
+      - uses: actions/upload-artifact@v5
+        with:
+          name: Glim
+          path: src/Glim.exe
+          if-no-files-found: error

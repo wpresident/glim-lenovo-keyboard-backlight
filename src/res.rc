@@ -1,0 +1,34 @@
+#include <winver.h>
+#include "version.h"
+1 ICON "app.ico"
+/* tray icons by backlight mode: 2 + level (off, low, high, auto) */
+2 ICON "tray_off.ico"
+3 ICON "tray_low.ico"
+4 ICON "tray_high.ico"
+5 ICON "tray_auto.ico"
+1 24 "app.manifest"
+VS_VERSION_INFO VERSIONINFO
+FILEVERSION GLIM_VER_MAJOR,GLIM_VER_MINOR,GLIM_VER_PATCH,0
+PRODUCTVERSION GLIM_VER_MAJOR,GLIM_VER_MINOR,GLIM_VER_PATCH,0
+FILEOS VOS_NT_WINDOWS32
+FILETYPE VFT_APP
+BEGIN
+  BLOCK "StringFileInfo"
+  BEGIN
+    BLOCK "040904B0"
+    BEGIN
+      VALUE "CompanyName", "wpresident"
+      VALUE "FileDescription", "Glim - keyboard backlight keeper for Lenovo laptops"
+      VALUE "FileVersion", GLIM_VER_STR
+      VALUE "InternalName", "Glim"
+      VALUE "LegalCopyright", "Copyright (c) 2026 wpresident, MIT License"
+      VALUE "OriginalFilename", "Glim.exe"
+      VALUE "ProductName", "Glim"
+      VALUE "ProductVersion", GLIM_VER_STR
+    END
+  END
+  BLOCK "VarFileInfo"
+  BEGIN
+    VALUE "Translation", 0x409, 1200
+  END
+END
